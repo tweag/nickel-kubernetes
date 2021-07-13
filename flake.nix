@@ -3,7 +3,7 @@
 
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
-    pkgs.url = "github:NixOS/nixpkgs/nixos-20.09";
+    pkgs.url = "github:NixOS/nixpkgs/nixos-21.05";
   };
 
   outputs = { self, pkgs, flake-utils }:
