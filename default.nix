@@ -1,6 +1,7 @@
 { 
   system ? builtins.currentSystem
 , pkgs ? import ./nix/current_host/nixpkgs.nix { inherit system; }
+, nickel
 , ...
 }:
 
@@ -26,6 +27,7 @@ let
   ) k8s_versions_sha256;
   nativeBuildInputs = with pkgs; [ 
     cargo
+    nickel
     nix
   ];
 
