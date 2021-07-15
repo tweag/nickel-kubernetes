@@ -104,13 +104,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nickel-kubernetes-gen"
-version = "0.1.0"
-dependencies = [
- "openapi",
-]
-
-[[package]]
 name = "object"
 version = "0.25.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -211,6 +204,13 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-xid",
+]
+
+[[package]]
+name = "tweag-gen-k8s-nickel"
+version = "0.1.0"
+dependencies = [
+ "openapi",
 ]
 
 [[package]]

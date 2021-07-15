@@ -1,5 +1,5 @@
 [package]
-name = "nickel-kubernetes-gen"
+name = "tweag-gen-k8s-nickel"
 version = "0.1.0"
 authors = ["agondek"]
 edition = "2018"
