@@ -11,7 +11,14 @@ fn main() {
         }
         //println!("name: {:?}", name);
         //println!("spec: {:?}", schema);
-        println!("{:?}", schema.to_ncl(name.as_str()));
+        let mut a = "{\n".to_string();
+        let b = schema.to_ncl(name.as_str(), 2);
+        let c = "}\n";
+        a.push_str(b.as_str());
+        a.push_str("\n");
+        a.push_str(c);
+
+        std::fs::write("result.ncl", a);
       };
     },
     Err(err) => println!("error: {}", err)
