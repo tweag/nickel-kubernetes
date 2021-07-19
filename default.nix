@@ -9,7 +9,7 @@ let
   name = "nickel-kubernetes";
   k8s_versions_sha256 = {
     "1.12" = "wOd5lOKKI6AY5dLTdbdzfLq6HdDspSt+q8H3LQlIPZ4=";
-    "1.13" = "R6Mz/vESlOi9/spIp05n+0OPP/pCeFbTxEPRryz3etQ=";
+    "1.13" = "TycofoLG9DBNv5nxxo2rEsHFtUBlgpYFfUeuoGjhzNk="; # Changed in last week xD
     "1.14" = "uSMIglMlax7RYx+48yMo0ImEWDp/McWMGi2Vkm9x8gQ=";
     "1.15" = "R6Mz/vESlOi9/spIp05n+0OPP/pCeFbTxEPRryz3etQ=";
     "1.16" = "g6Ju9hQaaPt9y4oYnIma7FXXHb7WdlteBXy7puFFMBs=";

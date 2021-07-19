@@ -9,14 +9,10 @@ fn main() {
         if name != "io.k8s.apimachinery.pkg.apis.meta.v1.ObjectMeta" {
           continue
         }
-        //println!("name: {:?}", name);
-        //println!("spec: {:?}", schema);
-        let mut a = "{\n".to_string();
-        let b = schema.to_ncl(name.as_str(), 2);
-        let c = "}\n";
+        let mut a = "let ".to_string();
+        let b = schema.to_ncl(name.as_str(), 0);
         a.push_str(b.as_str());
         a.push_str("\n");
-        a.push_str(c);
 
         std::fs::write("result.ncl", a);
       };
