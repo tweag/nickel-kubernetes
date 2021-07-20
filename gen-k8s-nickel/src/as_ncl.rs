@@ -2,12 +2,15 @@ pub trait AsNcl {
   fn to_ncl(&self, name: &str, indent: usize) -> String;
 }
 
-fn k8s_to_ncl_id(name: &str) -> String {
+pub fn k8s_to_ncl_id(name: &str) -> String {
   name.replace(".", "_")
 }
 
-fn k8s_ref_to_ncl_id(r: &str) -> String {
-  k8s_to_ncl_id(r.replace("#/definitions/", "").as_str())
+pub fn k8s_ref_to_ncl_id(r: &str) -> String {
+  format!(
+    "#{}", 
+    k8s_to_ncl_id(r.replace("#/definitions/", "").as_str())
+  )
 }
 
 fn _to_ref_def(name: &str, indent: usize, ref_path: &Option<String>) -> String {
@@ -46,9 +49,12 @@ fn _to_list_def(
       .map_or(format!("<sensible_warning:{}>", name), |i| {
         i.ref_path
           .as_ref()
-          .map_or(format!("<sensible_warning:{}>", name), |r| {
-            k8s_ref_to_ncl_id(r)
-          })
+          .map_or_else(
+            || i.schema_type.as_ref().map_or(format!("<sensible_warning:{}>", name), |x|x.clone()), 
+            |r| k8s_ref_to_ncl_id(r))
+          // .map_or(format!("<sensible_warning:{}>", name), |r| {
+          //   k8s_ref_to_ncl_id(r)
+          // })
       });
   format!(
     "{}{} | List {}",
