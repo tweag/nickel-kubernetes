@@ -1,118 +1,85 @@
 pub trait AsNcl {
-  fn to_ncl(&self, name: &str, indent: usize) -> String;
-}
-
-pub fn k8s_to_ncl_id(name: &str) -> String {
-  name.replace(".", "_")
-}
-
-pub fn k8s_ref_to_ncl_id(r: &str) -> String {
-  format!(
-    "#{}", 
-    k8s_to_ncl_id(r.replace("#/definitions/", "").as_str())
-  )
-}
-
-fn _to_ref_def(name: &str, indent: usize, ref_path: &Option<String>) -> String {
-  ref_path
-    .as_ref()
-    .map_or(format!("<sensible_warning:{}>", name), |r| {
-      format!(
-        "{}{} | {}",
-        format_args!("{:>1$}", "", indent),
-        name,
-        k8s_ref_to_ncl_id(r.as_str())
-      )
-    })
-}
-
-fn _to_str_def(name: &str, indent: usize) -> String {
-  format!("{}{} | Str", format_args!("{:>1$}", "", indent), name)
-}
-
-fn _to_int_def(name: &str, indent: usize) -> String {
-  format!(
-    "{}{} | #(nums.Int)",
-    format_args!("{:>1$}", "", indent),
-    name
-  )
-}
-
-fn _to_list_def(
-  name: &str,
-  indent: usize,
-  items: &Option<Box<openapi::Schema>>,
-) -> String {
-  let item_type =
-    items
-      .as_ref()
-      .map_or(format!("<sensible_warning:{}>", name), |i| {
-        i.ref_path
-          .as_ref()
-          .map_or_else(
-            || i.schema_type.as_ref().map_or(format!("<sensible_warning:{}>", name), |x|x.clone()), 
-            |r| k8s_ref_to_ncl_id(r))
-          // .map_or(format!("<sensible_warning:{}>", name), |r| {
-          //   k8s_ref_to_ncl_id(r)
-          // })
-      });
-  format!(
-    "{}{} | List {}",
-    format_args!("{:>1$}", "", indent),
-    name,
-    item_type
-  )
-}
-
-fn _to_custom_type_def(
-  name: &str,
-  indent: usize,
-  properties: &Option<std::collections::BTreeMap<String, openapi::Schema>>,
-) -> String {
-  if properties.as_ref().is_none() {
-    format!(
-      "{}{} | #(utils.DictStrStr)",
-      format_args!("{:>1$}", "", indent),
-      name
-    )
-  } else {
-    let props_defs =
-      properties
-        .as_ref()
-        .map_or(format!("<sensible_warning:{}>", name), |p| {
-          p.into_iter()
-            .map(|p| {
-              let (n, s) = p;
-              s.to_ncl(n.as_str(), indent + 2)
-            })
-            .collect::<Vec<String>>()
-            .join(",\n")
-            + ","
-        });
-    format!(
-      "{}{} = {{\n{}\n{}}}",
-      format_args!("{:>1$}", "", indent),
-      name,
-      props_defs,
-      format_args!("{:>1$}", "", indent)
-    )
-  }
+  fn to_ncl(&self, name: &str, force_xyz: bool) -> String;
 }
 
 impl AsNcl for openapi::Schema {
-  fn to_ncl(&self, name: &str, indent: usize) -> String {
-    let __k8s_name = k8s_to_ncl_id(name);
-    let _k8s_name = __k8s_name.as_str();
+  fn to_ncl(&self, name: &str, force_xyz: bool) -> String {
+    let ncl_id = k8s_to_ncl_id(name);
+    let contract = get_contract(self);
+    if contract.starts_with("=") {
+      format!("{} {}", ncl_id, contract)
+    } else if force_xyz {
+      format!("{} {}", ncl_id, contract_to_xyz(&contract))
+    } else {
+      format!("{} | {}", ncl_id, contract)
+    }
+  }
+}
 
-    self.schema_type.as_ref().map_or_else(
-      || _to_ref_def(_k8s_name, indent, &self.ref_path),
-      |schema_type| match schema_type.to_lowercase().as_str() {
-        "object" => _to_custom_type_def(_k8s_name, indent, &self.properties),
-        "array" => _to_list_def(name, indent, &self.items),
-        "integer" => _to_int_def(_k8s_name, indent),
-        "string" => _to_str_def(_k8s_name, indent),
-        _ => format!("<sensible_warning:{}>", _k8s_name),
-      },
-    )
+pub fn contract_to_xyz(contract: &String) -> String {
+  let type_name = if contract != "Dyn" {
+    contract.as_str()
+  } else {
+    "Record"
+  };
+  format!("= fun label value => if (builtins.is{} value) then value else contracts.blame label", type_name)
+}
+
+fn k8s_to_ncl_id(name: &str) -> String {
+  name.replace(".", "_").replace("-", "_")
+}
+
+fn k8s_ref_to_ncl_id(r: &str) -> String {
+  k8s_to_ncl_id(r.replace("#/definitions/", "").as_str())
+}
+
+fn quote_if_ncl_keyword(text: &String) -> String {
+  match text.as_str() {
+    "default" => "\"default\"".to_string(),
+    "$ref" => "\"$ref\"".to_string(),
+    "$schema" => "\"$schema\"".to_string(),
+    _ => text.clone()
+  }
+}
+
+// Maybe vec<string> where each entry represents single line
+fn get_contract(schema: &openapi::Schema) -> String {
+  schema.schema_type.as_ref().map_or_else(
+    || schema.ref_path.as_ref().map_or(
+      "<sensible_warning>".to_string(),
+      |ref_path| "#".to_string() + &k8s_ref_to_ncl_id(ref_path.as_str())
+    ), 
+    |schema_type| match schema_type.as_str() {
+      "integer" => "Num".to_string(),  // TODO: Improve
+      "boolean" => "Bool".to_string(), // TODO: Improve
+      "string" => "Str".to_string(),
+      "array" => schema.items.as_ref().map_or(
+        "List <sensible_warning>".to_string(),
+        |items| format!("List {}", get_contract(&items))
+      ),
+      "object" => schema.properties.as_ref().map_or_else(
+        || "Dyn".to_string(),  // TODO: Improve
+        |properties| {
+          let inner = properties.into_iter().map(|(property_name, def)| {
+            //format!("{} {}", property_name, get_contract(def))
+            def.to_ncl(quote_if_ncl_keyword(property_name).as_str(), false)
+          }).collect::<Vec<String>>()
+          .join(", ");
+          format!("= {{{}}}", inner)
+        }
+      ),
+      _ => "<sensible_warning>".to_string()
+    }
+  )
+}
+
+#[cfg(test)]
+mod tests {
+  // Note this useful idiom: importing names from outer (for mod tests) scope.
+  use super::*;
+
+  #[test]
+  fn test_add() {
+      assert_eq!(3, 3);
   }
 }
