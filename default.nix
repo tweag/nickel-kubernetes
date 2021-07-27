@@ -29,6 +29,7 @@ let
     cargo
     nickel
     nix
+    rustfmt
   ];
 
   shell = pkgs.mkShell {

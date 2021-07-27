@@ -42,7 +42,6 @@ fn quote_if_ncl_keyword(text: &String) -> String {
   }
 }
 
-// Maybe vec<string> where each entry represents single line
 fn get_contract(schema: &openapi::Schema) -> String {
   schema.schema_type.as_ref().map_or_else(
     || schema.ref_path.as_ref().map_or(
@@ -61,7 +60,6 @@ fn get_contract(schema: &openapi::Schema) -> String {
         || "Dyn".to_string(),  // TODO: Improve
         |properties| {
           let inner = properties.into_iter().map(|(property_name, def)| {
-            //format!("{} {}", property_name, get_contract(def))
             def.to_ncl(quote_if_ncl_keyword(property_name).as_str(), false)
           }).collect::<Vec<String>>()
           .join(", ");
