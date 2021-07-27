@@ -1,5 +1,5 @@
 #! /usr/bin/env nix-shell
-#! nix-shell -i bash -p coreutils nixfmt
+#! nix-shell -i bash -p coreutils rustfmt
 
 set -euo pipefail
 
@@ -12,14 +12,14 @@ set -euo pipefail
   SCRIPT_DIR="."
 }
 
-command -v nixfmt >/dev/null 2>&1 || {
-  echo >&2 "'nixfmt' is required but it's not found.  Aborting."; exit 1;
+command -v rustfmt >/dev/null 2>&1 || {
+  echo >&2 "'rustfmt' is required but it's not found.  Aborting."; exit 1;
 }
 
 NIX_FILES="$(find ${SCRIPT_DIR}/.. \
   -type f -a \
-  \( -name '*.nix' \
+  \( -name '*.rs' \
   -a -not -wholename '*/result/*' \) \
 )"
 
-nixfmt -w 80 ${NIX_FILES}
+rustfmt --config-path "${SCRIPT_DIR}/../gen-k8s-nickel/.rustfmt.toml" ${NIX_FILES}
