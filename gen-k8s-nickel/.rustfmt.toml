@@ -1,0 +1,8 @@
+max_width = 80
+tab_spaces = 2
+newline_style = "Unix"
+wrap_comments = true
+comment_width = 80
+imports_layout = "Vertical"
+edition = "2018"
+

@@ -1,6 +1,5 @@
 use tweag_gen_k8s_nickel::as_ncl::AsNcl;
 
-
 fn main() {
   let args: Vec<String> = std::env::args().collect();
   let path_to_openapi_def = args.get(1).map_or("error", |x| x);
@@ -12,7 +11,7 @@ fn main() {
         a.push_str("  ");
         a.push_str(b.as_str());
         a.push_str(",\n");
-      };
+      }
       a.push_str("}\n");
       std::fs::write("result.ncl", a);
     }
