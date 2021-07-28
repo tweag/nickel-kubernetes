@@ -36,7 +36,7 @@ fn k8s_ref_to_ncl_id(r: &str) -> String {
 fn quote_if_has_ncl_reserved_chars(text: &String) -> String {
   let text_as_str = text.as_str();
   if text_as_str.contains("$") {
-    return format!("\"{}\"", text)
+    return format!("\"{}\"", text);
   }
 
   match text_as_str {
@@ -71,7 +71,10 @@ fn get_contract(schema: &openapi::Schema) -> String {
           let inner = properties
             .into_iter()
             .map(|(property_name, def)| {
-              def.to_ncl(quote_if_has_ncl_reserved_chars(property_name).as_str(), false)
+              def.to_ncl(
+                quote_if_has_ncl_reserved_chars(property_name).as_str(),
+                false,
+              )
             })
             .collect::<Vec<String>>()
             .join(", ");
@@ -94,7 +97,10 @@ mod tests {
   #[case("$ref", "\"$ref\"")]
   #[case("$schema", "\"$schema\"")]
   #[case("weird$word", "\"weird$word\"")]
-  fn test_quote_if_has_ncl_reserved_chars(#[case] input: String, #[case] expected: String) {
+  fn test_quote_if_has_ncl_reserved_chars(
+    #[case] input: String,
+    #[case] expected: String,
+  ) {
     assert_eq!(expected, quote_if_has_ncl_reserved_chars(&input));
   }
 
@@ -107,9 +113,18 @@ mod tests {
   }
 
   #[rstest]
-  #[case("#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time", "io_k8s_apimachinery_pkg_apis_meta_v1_Time")]
-  #[case("#/definitions/io.k8s.some-thing.Something", "io_k8s_some_thing_Something")]
-  #[case("#/definitions/imaginaryIdentifierWithoutDots", "imaginaryIdentifierWithoutDots")]
+  #[case(
+    "#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time",
+    "io_k8s_apimachinery_pkg_apis_meta_v1_Time"
+  )]
+  #[case(
+    "#/definitions/io.k8s.some-thing.Something",
+    "io_k8s_some_thing_Something"
+  )]
+  #[case(
+    "#/definitions/imaginaryIdentifierWithoutDots",
+    "imaginaryIdentifierWithoutDots"
+  )]
   #[case("imaginaryIdentifierWithoutDots", "imaginaryIdentifierWithoutDots")]
   #[case("#/definitions/42", "42")]
   fn test_k8s_ref_to_ncl_id(#[case] input: String, #[case] expected: String) {
