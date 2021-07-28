@@ -33,11 +33,14 @@ fn k8s_ref_to_ncl_id(r: &str) -> String {
   k8s_to_ncl_id(r.replace("#/definitions/", "").as_str())
 }
 
-fn quote_if_ncl_keyword(text: &String) -> String {
-  match text.as_str() {
+fn quote_if_has_ncl_reserved_chars(text: &String) -> String {
+  let text_as_str = text.as_str();
+  if text_as_str.contains("$") {
+    return format!("\"{}\"", text)
+  }
+
+  match text_as_str {
     "default" => "\"default\"".to_string(),
-    "$ref" => "\"$ref\"".to_string(),
-    "$schema" => "\"$schema\"".to_string(),
     _ => text.clone(),
   }
 }
@@ -68,7 +71,7 @@ fn get_contract(schema: &openapi::Schema) -> String {
           let inner = properties
             .into_iter()
             .map(|(property_name, def)| {
-              def.to_ncl(quote_if_ncl_keyword(property_name).as_str(), false)
+              def.to_ncl(quote_if_has_ncl_reserved_chars(property_name).as_str(), false)
             })
             .collect::<Vec<String>>()
             .join(", ");
@@ -82,11 +85,16 @@ fn get_contract(schema: &openapi::Schema) -> String {
 
 #[cfg(test)]
 mod tests {
-  // Note this useful idiom: importing names from outer (for mod tests) scope.
   use super::*;
+  use rstest::rstest;
 
-  #[test]
-  fn test_add() {
-    assert_eq!(3, 3);
+  #[rstest]
+  #[case("apiGroup", "apiGroup")]
+  #[case("default", "\"default\"")]
+  #[case("$ref", "\"$ref\"")]
+  #[case("$schema", "\"$schema\"")]
+  #[case("weird$word", "\"weird$word\"")]
+  fn test_quote_if_has_ncl_reserved_chars(#[case] input: String, #[case] expected: String) {
+    assert_eq!(expected, quote_if_has_ncl_reserved_chars(&input));
   }
 }
