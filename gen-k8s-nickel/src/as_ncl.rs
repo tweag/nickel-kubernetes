@@ -97,4 +97,22 @@ mod tests {
   fn test_quote_if_has_ncl_reserved_chars(#[case] input: String, #[case] expected: String) {
     assert_eq!(expected, quote_if_has_ncl_reserved_chars(&input));
   }
+
+  #[rstest]
+  #[case("io.k8s.api.apps.v1.Deployment", "io_k8s_api_apps_v1_Deployment")]
+  #[case("io.k8s.apiextensions-apiserver.pkg.apis.apiextensions.v1.CustomResourceDefinition", "io_k8s_apiextensions_apiserver_pkg_apis_apiextensions_v1_CustomResourceDefinition")]
+  #[case("imaginaryIdentifierWithoutDots", "imaginaryIdentifierWithoutDots")]
+  fn test_k8s_to_ncl_id(#[case] input: String, #[case] expected: String) {
+    assert_eq!(expected, k8s_to_ncl_id(&input));
+  }
+
+  #[rstest]
+  #[case("#/definitions/io.k8s.apimachinery.pkg.apis.meta.v1.Time", "io_k8s_apimachinery_pkg_apis_meta_v1_Time")]
+  #[case("#/definitions/io.k8s.some-thing.Something", "io_k8s_some_thing_Something")]
+  #[case("#/definitions/imaginaryIdentifierWithoutDots", "imaginaryIdentifierWithoutDots")]
+  #[case("imaginaryIdentifierWithoutDots", "imaginaryIdentifierWithoutDots")]
+  #[case("#/definitions/42", "42")]
+  fn test_k8s_ref_to_ncl_id(#[case] input: String, #[case] expected: String) {
+    assert_eq!(expected, k8s_ref_to_ncl_id(&input));
+  }
 }
