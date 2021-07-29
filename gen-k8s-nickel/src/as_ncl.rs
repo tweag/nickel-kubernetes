@@ -2,7 +2,7 @@ pub trait AsNcl {
   fn to_ncl(&self, name: &str, force_xyz: bool) -> String;
 }
 
-impl AsNcl for openapi::Schema {
+impl AsNcl for openapi::v2::Schema {
   fn to_ncl(&self, name: &str, force_xyz: bool) -> String {
     let ncl_id = k8s_to_ncl_id(name);
     let contract = get_contract(self);
@@ -45,7 +45,7 @@ fn quote_if_has_ncl_reserved_chars(text: &String) -> String {
   }
 }
 
-fn get_contract(schema: &openapi::Schema) -> String {
+fn get_contract(schema: &openapi::v2::Schema) -> String {
   schema.schema_type.as_ref().map_or_else(
     || {
       schema

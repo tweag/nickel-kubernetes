@@ -32,17 +32,23 @@ fn main() {
     .map_or("<path-to-k8s-swagger-json-not-provided>", |p| p);
 
   match openapi::from_path(path_to_openapi_def) {
-    Ok(spec) => {
-      let mut a = "{\n".to_string();
-      for (name, schema) in spec.definitions.into_iter() {
-        let b = schema.to_ncl(name.as_str(), true);
-        a.push_str("  ");
-        a.push_str(b.as_str());
-        a.push_str(",\n");
-      }
-      a.push_str("}\n");
-      println!("{}", a);
-    }
+    Ok(open_api) => match open_api {
+      openapi::OpenApi::V2(spec) => match spec.definitions {
+        Some(defs) => {
+          let mut a = "{\n".to_string();
+          for (name, schema) in defs.into_iter() {
+            let b = schema.to_ncl(name.as_str(), true);
+            a.push_str("  ");
+            a.push_str(b.as_str());
+            a.push_str(",\n");
+          }
+          a.push_str("}\n");
+          println!("{}", a);
+        }
+        None => (),
+      },
+      _ => (),
+    },
     Err(err) => println!("error: {}", err),
   }
 }
