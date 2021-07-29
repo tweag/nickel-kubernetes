@@ -1,8 +1,36 @@
+use clap::{
+  crate_authors,
+  crate_description,
+  crate_name,
+  crate_version,
+  App,
+  Arg,
+};
+
 use tweag_gen_k8s_nickel::as_ncl::AsNcl;
 
 fn main() {
-  let args: Vec<String> = std::env::args().collect();
-  let path_to_openapi_def = args.get(1).map_or("error", |x| x);
+  let matches = App::new(crate_name!())
+  .version(crate_version!())
+  .author(crate_authors!())
+  .about(crate_description!())
+  .arg(
+    Arg::with_name("k8s")
+      .takes_value(true)
+      .value_name("path-to-swagger.json")
+      .required(true)
+      .help("path to swagger.json OpenAPI specification, describing Kubernetes API"),
+  ).get_matches();
+
+  if matches.is_present("version") {
+    println!(crate_version!());
+    std::process::exit(0);
+  };
+
+  let path_to_openapi_def = matches
+    .value_of("k8s")
+    .map_or("<path-to-k8s-swagger-json-not-provided>", |p| p);
+
   match openapi::from_path(path_to_openapi_def) {
     Ok(spec) => {
       let mut a = "{\n".to_string();
@@ -13,7 +41,7 @@ fn main() {
         a.push_str(",\n");
       }
       a.push_str("}\n");
-      std::fs::write("result.ncl", a);
+      println!("{}", a);
     }
     Err(err) => println!("error: {}", err),
   }
