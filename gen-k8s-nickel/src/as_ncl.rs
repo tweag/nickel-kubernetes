@@ -1,3 +1,5 @@
+use crate::defs_overrides::DEFINITIONS_OVERRIDES;
+
 pub trait AsNcl {
   fn to_ncl(&self, name: &str, force_xyz: bool) -> String;
 }
@@ -5,7 +7,19 @@ pub trait AsNcl {
 impl AsNcl for openapi::v2::Schema {
   fn to_ncl(&self, name: &str, force_xyz: bool) -> String {
     let ncl_id = k8s_to_ncl_id(name);
-    let contract = get_contract(self);
+    let contract: String;
+
+    if DEFINITIONS_OVERRIDES.contains_key(name) {
+      contract = DEFINITIONS_OVERRIDES
+        .get(name)
+        .unwrap_or(&"")
+        .to_owned()
+        .to_owned()
+        .to_string();
+    } else {
+      contract = get_contract(self);
+    }
+
     if contract.starts_with("=") {
       format!("{} {}", ncl_id, contract)
     } else if force_xyz {
