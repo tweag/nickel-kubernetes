@@ -45,7 +45,55 @@ fn quote_if_has_ncl_reserved_chars(text: &String) -> String {
   }
 }
 
+fn get_x_k8s_group_version_kind(
+  schema: &openapi::v2::Schema,
+) -> Option<(String, String, String)> {
+  schema
+    .other
+    .to_owned()
+    .into_iter()
+    .filter_map(|(key, val)| {
+      if key != "x-kubernetes-group-version-kind" {
+        None
+      } else {
+        val
+          .as_array()
+          .map(|vec| {
+            vec
+              .first()
+              .map(|o| {
+                o.as_object().map(|obj| {
+                  let group = obj.get("group").map_or("".to_string(), |g| {
+                    g.as_str().map_or("".to_string(), |gg| gg.to_string())
+                  });
+                  let kind = obj.get("kind").map_or("".to_string(), |k| {
+                    k.as_str().map_or("".to_string(), |kk| kk.to_string())
+                  });
+                  let version =
+                    obj.get("version").map_or("".to_string(), |v| {
+                      v.as_str().map_or("".to_string(), |vv| vv.to_string())
+                    });
+                  (group, version, kind)
+                })
+              })
+              .flatten()
+          })
+          .flatten()
+      }
+    })
+    .collect::<Vec<(String, String, String)>>()
+    .first()
+    .map(|t| t.clone())
+}
+
 fn get_contract(schema: &openapi::v2::Schema) -> String {
+  let k8s_group_version_kind = get_x_k8s_group_version_kind(schema);
+  let (group, version, kind) = k8s_group_version_kind.clone().unwrap_or((
+    "".to_string(),
+    "".to_string(),
+    "".to_string(),
+  ));
+
   schema.schema_type.as_ref().map_or_else(
     || {
       schema
@@ -71,10 +119,20 @@ fn get_contract(schema: &openapi::v2::Schema) -> String {
           let inner = properties
             .into_iter()
             .map(|(property_name, def)| {
-              def.to_ncl(
-                quote_if_has_ncl_reserved_chars(property_name).as_str(),
-                false,
-              )
+              if k8s_group_version_kind.is_some()
+                && property_name.as_str() == "kind"
+              {
+                format!("{} = \"{}\"", property_name, kind)
+              } else if k8s_group_version_kind.is_some()
+                && property_name.as_str() == "apiVersion"
+              {
+                format!("{} = \"{}/{}\"", property_name, group, version)
+              } else {
+                def.to_ncl(
+                  quote_if_has_ncl_reserved_chars(property_name).as_str(),
+                  false,
+                )
+              }
             })
             .collect::<Vec<String>>()
             .join(", ");
