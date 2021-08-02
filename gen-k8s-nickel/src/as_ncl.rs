@@ -6,7 +6,7 @@ pub trait AsNcl {
 
 impl AsNcl for openapi::v2::Schema {
   fn to_ncl(&self, name: &str, force_xyz: bool) -> String {
-    let ncl_id = k8s_to_ncl_id(name);
+    let ncl_id = _k8s_to_ncl_id(name);
     let contract: String;
 
     if DEFINITIONS_OVERRIDES.contains_key(name) {
@@ -23,14 +23,14 @@ impl AsNcl for openapi::v2::Schema {
     if contract.starts_with("=") {
       format!("{} {}", ncl_id, contract)
     } else if force_xyz {
-      format!("{} {}", ncl_id, contract_to_xyz(&contract))
+      format!("{} {}", ncl_id, _contract_to_xyz(&contract))
     } else {
       format!("{} | {}", ncl_id, contract)
     }
   }
 }
 
-pub fn contract_to_xyz(contract: &String) -> String {
+fn _contract_to_xyz(contract: &String) -> String {
   let type_name = if contract != "Dyn" {
     contract.as_str()
   } else {
@@ -39,15 +39,15 @@ pub fn contract_to_xyz(contract: &String) -> String {
   format!("= fun label value => if (builtins.is{} value) then value else contracts.blame label", type_name)
 }
 
-fn k8s_to_ncl_id(name: &str) -> String {
+fn _k8s_to_ncl_id(name: &str) -> String {
   name.replace(".", "_").replace("-", "_")
 }
 
-fn k8s_ref_to_ncl_id(r: &str) -> String {
-  k8s_to_ncl_id(r.replace("#/definitions/", "").as_str())
+fn _k8s_ref_to_ncl_id(r: &str) -> String {
+  _k8s_to_ncl_id(r.replace("#/definitions/", "").as_str())
 }
 
-fn quote_if_has_ncl_reserved_chars(text: &String) -> String {
+fn _quote_if_has_ncl_reserved_chars(text: &String) -> String {
   let text_as_str = text.as_str();
   if text_as_str.contains("$") {
     return format!("\"{}\"", text);
@@ -59,7 +59,7 @@ fn quote_if_has_ncl_reserved_chars(text: &String) -> String {
   }
 }
 
-fn get_x_k8s_group_version_kind(
+fn _get_x_k8s_group_version_kind(
   schema: &openapi::v2::Schema,
 ) -> Option<(String, String, String)> {
   schema
@@ -100,13 +100,44 @@ fn get_x_k8s_group_version_kind(
     .map(|t| t.clone())
 }
 
-fn get_contract(schema: &openapi::v2::Schema) -> String {
-  let k8s_group_version_kind = get_x_k8s_group_version_kind(schema);
+fn _get_object_property_contract(
+  property_name: &String,
+  def: &openapi::v2::Schema,
+  k8s_group_version_kind: &Option<(String, String, String)>,
+) -> String {
+  if k8s_group_version_kind.is_none() {
+    return def.to_ncl(
+      _quote_if_has_ncl_reserved_chars(property_name).as_str(),
+      false,
+    );
+  }
+
   let (group, version, kind) = k8s_group_version_kind.clone().unwrap_or((
     "".to_string(),
     "".to_string(),
     "".to_string(),
   ));
+
+  match property_name.as_str() {
+    "kind" => format!("{} = \"{}\"", property_name, kind),
+    "apiVersion" => format!(
+      "{} = \"{}\"",
+      property_name,
+      vec![group.clone(), version.clone()]
+        .into_iter()
+        .filter(|x| !x.is_empty())
+        .collect::<Vec<String>>()
+        .join("/")
+    ),
+    _ => def.to_ncl(
+      _quote_if_has_ncl_reserved_chars(property_name).as_str(),
+      false,
+    ),
+  }
+}
+
+fn get_contract(schema: &openapi::v2::Schema) -> String {
+  let k8s_group_version_kind = _get_x_k8s_group_version_kind(schema);
 
   schema.schema_type.as_ref().map_or_else(
     || {
@@ -114,12 +145,12 @@ fn get_contract(schema: &openapi::v2::Schema) -> String {
         .ref_path
         .as_ref()
         .map_or("<sensible_warning>".to_string(), |ref_path| {
-          "#".to_string() + &k8s_ref_to_ncl_id(ref_path.as_str())
+          "#".to_string() + &_k8s_ref_to_ncl_id(ref_path.as_str())
         })
     },
     |schema_type| match schema_type.as_str() {
-      "integer" => "Num".to_string(),  // TODO: Improve
-      "boolean" => "Bool".to_string(), // TODO: Improve
+      "integer" => "Num".to_string(),
+      "boolean" => "Bool".to_string(),
       "string" => "Str".to_string(),
       "array" => schema
         .items
@@ -128,25 +159,16 @@ fn get_contract(schema: &openapi::v2::Schema) -> String {
           format!("List {}", get_contract(&items))
         }),
       "object" => schema.properties.as_ref().map_or_else(
-        || "Dyn".to_string(), // TODO: Improve
+        || "Dyn".to_string(),
         |properties| {
           let inner = properties
             .into_iter()
             .map(|(property_name, def)| {
-              if k8s_group_version_kind.is_some()
-                && property_name.as_str() == "kind"
-              {
-                format!("{} = \"{}\"", property_name, kind)
-              } else if k8s_group_version_kind.is_some()
-                && property_name.as_str() == "apiVersion"
-              {
-                format!("{} = \"{}/{}\"", property_name, group, version)
-              } else {
-                def.to_ncl(
-                  quote_if_has_ncl_reserved_chars(property_name).as_str(),
-                  false,
-                )
-              }
+              _get_object_property_contract(
+                property_name,
+                def,
+                &k8s_group_version_kind,
+              )
             })
             .collect::<Vec<String>>()
             .join(", ");
@@ -173,7 +195,7 @@ mod tests {
     #[case] input: String,
     #[case] expected: String,
   ) {
-    assert_eq!(expected, quote_if_has_ncl_reserved_chars(&input));
+    assert_eq!(expected, _quote_if_has_ncl_reserved_chars(&input));
   }
 
   #[rstest]
@@ -181,7 +203,7 @@ mod tests {
   #[case("io.k8s.apiextensions-apiserver.pkg.apis.apiextensions.v1.CustomResourceDefinition", "io_k8s_apiextensions_apiserver_pkg_apis_apiextensions_v1_CustomResourceDefinition")]
   #[case("imaginaryIdentifierWithoutDots", "imaginaryIdentifierWithoutDots")]
   fn test_k8s_to_ncl_id(#[case] input: String, #[case] expected: String) {
-    assert_eq!(expected, k8s_to_ncl_id(&input));
+    assert_eq!(expected, _k8s_to_ncl_id(&input));
   }
 
   #[rstest]
@@ -200,6 +222,6 @@ mod tests {
   #[case("imaginaryIdentifierWithoutDots", "imaginaryIdentifierWithoutDots")]
   #[case("#/definitions/42", "42")]
   fn test_k8s_ref_to_ncl_id(#[case] input: String, #[case] expected: String) {
-    assert_eq!(expected, k8s_ref_to_ncl_id(&input));
+    assert_eq!(expected, _k8s_ref_to_ncl_id(&input));
   }
 }
