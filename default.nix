@@ -5,8 +5,8 @@
 let
   name = "nickel-kubernetes";
   k8s_versions_sha256 = {
-    "1.12.10" = "wOd5lOKKI6AY5dLTdbdzfLq6HdDspSt+q8H3LQlIPZ4=";
-    "1.13.12" = "TycofoLG9DBNv5nxxo2rEsHFtUBlgpYFfUeuoGjhzNk=";
+    "1.12.10" = "o3uZ9N2FDkp3GuIEdVnfnCFQJZ9Hef4+OO3t0eC9qYs=";
+    "1.13.12" = "8jUzfeLjIcqXyQJO0P86V5wH/PNqpc41asoOr9sj+28=";
     "1.14.10" = "uSMIglMlax7RYx+48yMo0ImEWDp/McWMGi2Vkm9x8gQ=";
     "1.15.12" = "R6Mz/vESlOi9/spIp05n+0OPP/pCeFbTxEPRryz3etQ=";
     "1.16.15" = "g6Ju9hQaaPt9y4oYnIma7FXXHb7WdlteBXy7puFFMBs=";
