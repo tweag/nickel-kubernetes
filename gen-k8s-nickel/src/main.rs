@@ -8,6 +8,7 @@ use clap::{
 };
 
 use tweag_gen_k8s_nickel::as_ncl::AsNcl;
+use tweag_gen_k8s_nickel::format::format_ncl;
 
 fn main() {
   let matches = App::new(crate_name!())
@@ -35,15 +36,15 @@ fn main() {
     Ok(open_api) => match open_api {
       openapi::OpenApi::V2(spec) => match spec.definitions {
         Some(defs) => {
-          let mut a = "{\n".to_string();
+          let mut a = "{".to_string();
           for (name, schema) in defs.into_iter() {
             let b = schema.to_ncl(name.as_str(), true);
-            a.push_str("  ");
             a.push_str(b.as_str());
-            a.push_str(",\n");
+            a.push_str(",");
           }
-          a.push_str("}\n");
-          println!("{}", a);
+          a.push_str("}");
+          let c = format_ncl(a);
+          println!("{}", c);
         }
         None => (),
       },

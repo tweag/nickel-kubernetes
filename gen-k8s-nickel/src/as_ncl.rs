@@ -172,7 +172,7 @@ fn get_contract(schema: &openapi::v2::Schema) -> String {
               )
             })
             .collect::<Vec<String>>()
-            .join(", ");
+            .join(",");
           format!("= {{{}}}", inner)
         },
       ),
