@@ -150,6 +150,7 @@ fn get_contract(schema: &openapi::v2::Schema) -> String {
     },
     |schema_type| match schema_type.as_str() {
       "integer" => "Num".to_string(),
+      "number" => "Num".to_string(),
       "boolean" => "Bool".to_string(),
       "string" => "Str".to_string(),
       "array" => schema
