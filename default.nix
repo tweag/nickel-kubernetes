@@ -1,6 +1,5 @@
-{ system ? builtins.currentSystem
-, pkgs ? import ./nix/current_host/nixpkgs.nix { inherit system; }, nickel, ...
-}:
+{ system ? builtins.currentSystem, pkgs ? import <nixpkgs> { inherit system; }
+, nickel, ... }:
 
 let
   name = "nickel-kubernetes";
@@ -16,7 +15,7 @@ let
     "1.20.9" = "xzVOarQDSomHMimpt8H6MfpiQrLl9am2fDvk/GfLkDw=";
     "1.21.3" = "EoqYTbtaTlzs7vneoNtXUmdnjTM/U+1gYwCiEy0lOcw=";
   };
-  kubernetes_open_api_specs = pkgs.lib.mapAttrs (version: sha256:
+  kubernetes_open_api_specs_files = pkgs.lib.mapAttrs (version: sha256:
     pkgs.fetchurl {
       url =
         "https://raw.githubusercontent.com/kubernetes/kubernetes/v${version}/api/openapi-spec/swagger.json";
@@ -24,16 +23,30 @@ let
     }) k8s_versions_sha256;
   nativeBuildInputs = with pkgs; [ cargo nickel nix nixfmt rustfmt ];
 
+  kubernetes_open_api_specs = pkgs.stdenv.mkDerivation {
+    name = "kubernetes-openapi-specs";
+    phases = [ "installPhase" ];
+
+    installPhase = ''
+      mkdir -p $out
+      ${
+        pkgs.lib.foldl (p: c: p + "\n" + c) "" (pkgs.lib.mapAttrsToList
+          (version: path: "ln -fs ${path} $out/${version}.json")
+          kubernetes_open_api_specs_files)
+      }    
+    '';
+  };
+
   shell = pkgs.mkShell {
     inherit name nativeBuildInputs;
+
+    K8S_NICKEL_SPECS_DIR = "${kubernetes_open_api_specs}";
 
     shellHook = ''
       export TERM=xterm
 
-      # Populate k8s-openapi-v2-specs
-      ${pkgs.lib.foldl (p: c: p + "\n" + c) "" (pkgs.lib.mapAttrsToList
-        (version: path: "ln -fs ${path} ./k8s-openapi-v2-specs/${version}.json")
-        kubernetes_open_api_specs)}
+      # Expose k8s openapi spec files
+      ln -fs ${kubernetes_open_api_specs} ./k8s-openapi-v2-specs
 
       echo 'Welcome to ${name} development shell!'
     '';

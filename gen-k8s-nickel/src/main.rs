@@ -29,9 +29,12 @@ fn main() {
     std::process::exit(0);
   };
 
-  let path_to_openapi_def = matches
-    .value_of("k8s")
-    .map_or("<path-to-k8s-swagger-json-not-provided>", |p| p);
+  let path_to_openapi_def = std::path::Path::new(
+    matches
+      .value_of("k8s")
+      .map_or("<path-to-k8s-swagger-json-not-provided>", |p| p),
+  )
+  .to_path_buf();
 
   match get_k8s_specs(path_to_openapi_def) {
     Some(spec) => match spec.definitions {
