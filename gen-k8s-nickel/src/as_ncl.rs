@@ -134,17 +134,44 @@ fn _get_object_property_contract(
   }
 }
 
+fn openapi_object_contract(
+  properties: &Option<std::collections::BTreeMap<String, openapi::v2::Schema>>,
+  k8s_group_version_kind: &Option<(String, String, String)>,
+) -> String {
+  properties.as_ref().map_or_else(
+    || "Dyn".to_string(),
+    |properties| {
+      let inner = properties
+        .into_iter()
+        .map(|(property_name, def)| {
+          _get_object_property_contract(
+            property_name,
+            def,
+            &k8s_group_version_kind,
+          )
+        })
+        .collect::<Vec<String>>()
+        .join(",");
+      format!("= {{{}}}", inner)
+    },
+  )
+}
+
 fn get_contract(schema: &openapi::v2::Schema) -> String {
   let k8s_group_version_kind = _get_x_k8s_group_version_kind(schema);
 
   schema.schema_type.as_ref().map_or_else(
     || {
-      schema
-        .ref_path
-        .as_ref()
-        .map_or("<sensible_warning>".to_string(), |ref_path| {
-          "#".to_string() + &_k8s_ref_to_ncl_id(ref_path.as_str())
-        })
+      schema.ref_path.as_ref().map_or_else(
+        || openapi_object_contract(&schema.properties, &k8s_group_version_kind),
+        |ref_path| {
+          if schema.description.as_ref().map_or(&"".to_string(), |des| des).starts_with("Deprecated.") {
+            "= {}".to_string()
+          } else {
+            "#".to_string() + &_k8s_ref_to_ncl_id(ref_path.as_str())
+          }
+        },
+      )
     },
     |schema_type| match schema_type.as_str() {
       "integer" => "Num".to_string(),
@@ -157,23 +184,7 @@ fn get_contract(schema: &openapi::v2::Schema) -> String {
         .map_or("List <sensible_warning>".to_string(), |items| {
           format!("List {}", get_contract(&items))
         }),
-      "object" => schema.properties.as_ref().map_or_else(
-        || "Dyn".to_string(),
-        |properties| {
-          let inner = properties
-            .into_iter()
-            .map(|(property_name, def)| {
-              _get_object_property_contract(
-                property_name,
-                def,
-                &k8s_group_version_kind,
-              )
-            })
-            .collect::<Vec<String>>()
-            .join(",");
-          format!("= {{{}}}", inner)
-        },
-      ),
+      "object" => openapi_object_contract(&schema.properties, &k8s_group_version_kind),
       _ => "<sensible_warning>".to_string(),
     },
   )
