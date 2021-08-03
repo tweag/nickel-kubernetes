@@ -12,8 +12,7 @@ set -euo pipefail
   SCRIPT_DIR="."
 }
 
-mkdir -p "${SCRIPT_DIR}"/../k8s-nickel
-
 for filename in "${SCRIPT_DIR}"/../k8s-openapi-v2-specs/*.json; do
-  cd "${SCRIPT_DIR}"/../gen-k8s-nickel && cargo run $filename > "${SCRIPT_DIR}"/../k8s-nickel/"$(basename $filename .json).ncl"
+  mkdir -p "${SCRIPT_DIR}"/../kubernetes/"$(basename $filename .json)"
+  cd "${SCRIPT_DIR}"/../gen-k8s-nickel && cargo run $filename > "${SCRIPT_DIR}"/../kubernetes/"$(basename $filename .json)/k8s.ncl"
 done
