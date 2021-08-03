@@ -9,6 +9,7 @@ use clap::{
 
 use tweag_gen_k8s_nickel::as_ncl::AsNcl;
 use tweag_gen_k8s_nickel::format::format_ncl;
+use tweag_gen_k8s_nickel::k8s::get_k8s_specs;
 
 fn main() {
   let matches = App::new(crate_name!())
@@ -32,24 +33,21 @@ fn main() {
     .value_of("k8s")
     .map_or("<path-to-k8s-swagger-json-not-provided>", |p| p);
 
-  match openapi::from_path(path_to_openapi_def) {
-    Ok(open_api) => match open_api {
-      openapi::OpenApi::V2(spec) => match spec.definitions {
-        Some(defs) => {
-          let mut a = "{".to_string();
-          for (name, schema) in defs.into_iter() {
-            let b = schema.to_ncl(name.as_str(), true);
-            a.push_str(b.as_str());
-            a.push_str(",");
-          }
-          a.push_str("}");
-          let c = format_ncl(a);
-          println!("{}", c);
+  match get_k8s_specs(path_to_openapi_def) {
+    Some(spec) => match spec.definitions {
+      Some(defs) => {
+        let mut a = "{".to_string();
+        for (name, schema) in defs.into_iter() {
+          let b = schema.to_ncl(name.as_str(), true);
+          a.push_str(b.as_str());
+          a.push_str(",");
         }
-        None => (),
-      },
-      _ => (),
+        a.push_str("}");
+        let c = format_ncl(a);
+        println!("{}", c);
+      }
+      None => (),
     },
-    Err(err) => println!("error: {}", err),
+    None => (),
   }
 }

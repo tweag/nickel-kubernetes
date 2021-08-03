@@ -7,18 +7,16 @@ pub trait AsNcl {
 impl AsNcl for openapi::v2::Schema {
   fn to_ncl(&self, name: &str, force_xyz: bool) -> String {
     let ncl_id = _k8s_to_ncl_id(name);
-    let contract: String;
-
-    if DEFINITIONS_OVERRIDES.contains_key(name) {
-      contract = DEFINITIONS_OVERRIDES
+    let contract: String = if DEFINITIONS_OVERRIDES.contains_key(name) {
+      DEFINITIONS_OVERRIDES
         .get(name)
         .unwrap_or(&"")
         .to_owned()
         .to_owned()
-        .to_string();
+        .to_string()
     } else {
-      contract = get_contract(self);
-    }
+      get_contract(self)
+    };
 
     if contract.starts_with("=") {
       format!("{} {}", ncl_id, contract)
@@ -224,5 +222,18 @@ mod tests {
   #[case("#/definitions/42", "42")]
   fn test_k8s_ref_to_ncl_id(#[case] input: String, #[case] expected: String) {
     assert_eq!(expected, _k8s_ref_to_ncl_id(&input));
+  }
+
+  #[rstest]
+  #[case(
+    "Num",
+    "= fun label value => if (builtins.isNum value) then value else contracts.blame label"
+  )]
+  #[case(
+    "Dyn",
+    "= fun label value => if (builtins.isRecord value) then value else contracts.blame label"
+  )]
+  fn test_contract_to_xyz(#[case] input: String, #[case] expected: String) {
+    assert_eq!(expected, _contract_to_xyz(&input));
   }
 }
