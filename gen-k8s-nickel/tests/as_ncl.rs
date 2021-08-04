@@ -9,7 +9,7 @@ use tweag_gen_k8s_nickel::k8s::get_k8s_specs;
 
 #[fixture]
 fn openapi_k8s_def_fxt() -> Option<Spec> {
-  std::env::var("K8S_NICKEL_SPECS_DIR").map_or(None, |path| {
+  std::env::var("OPENAPI_SPECS_K8S_DIR").map_or(None, |path| {
     get_k8s_specs(std::path::Path::new(&path).join("1.21.3.json"))
   })
 }
