@@ -9,6 +9,13 @@
 
   outputs = { self, nickel, pkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system: {
+      defaultPackage = (
+        import ./default.nix {
+          system = system;
+          pkgs = pkgs.legacyPackages.${system};
+          nickel = nickel.defaultPackage.${system};
+        }
+      ).nickel_defs;
       devShell = (import ./default.nix {
         system = system;
         pkgs = pkgs.legacyPackages.${system};

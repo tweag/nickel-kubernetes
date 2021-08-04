@@ -2,7 +2,27 @@
 , nickel, ... }:
 
 let
-  name = "nickel-kubernetes";
+  OPENAPI_SPECS_K8S_DIR = "${openapi_specs.k8s.specs}";
+
+  openapi2_to_nickel = pkgs.rustPlatform.buildRustPackage rec {
+    inherit OPENAPI_SPECS_K8S_DIR;
+
+    pname = "openapi2-to-nickel";
+    version = "0.1.0";
+
+    src = builtins.path {
+      path = ./openapi2-to-nickel;
+      name = "openapi2-to-nickel-src";
+    };
+
+    cargoHash = "sha256-X2KEjXkjprw6ZbBzVxayam6Ls+3/5Oct8O4LvzhHyDk=";
+
+    # When it lands the stable channel:
+    # cargoLock = {
+    #   lockFile = ./openapi2-to-nickel/Cargo.lock;
+    # };
+  };
+
   openapi_specs = {
     k8s = {
       version_to_sha256 = {
@@ -37,12 +57,41 @@ let
     };
   };
 
-  nativeBuildInputs = with pkgs; [ cargo nickel nix nixfmt rustfmt ];
+  nickel_defs = {
+    all = pkgs.stdenv.mkDerivation {
+      name = "nickel-kubernetes-defs";
+      phases = [ "installPhase" ];
+
+      installPhase = ''
+        mkdir -p $out/kubernetes
+        cp -R ${nickel_defs.k8s}/* $out/kubernetes
+      '';
+    };
+    k8s = pkgs.stdenv.mkDerivation {
+      name = "nickel-k8s";
+      phases = [ "buildPhase" "installPhase" ];
+
+      nativeBuildInputs = [ pkgs.coreutils-full openapi2_to_nickel ];
+
+      buildPhase = ''
+        for filename in "${openapi_specs.k8s.specs}"/*.json; do
+          mkdir -p ./kubernetes/"$(basename $filename .json)"
+          openapi2-to-nickel $filename > ./kubernetes/"$(basename $filename .json)/k8s.ncl"
+        done
+      '';
+
+      installPhase = ''
+        mkdir -p $out
+        mv ./kubernetes/* $out/
+      '';
+    };
+  };
 
   shell = pkgs.mkShell {
-    inherit name nativeBuildInputs;
+    inherit OPENAPI_SPECS_K8S_DIR;
 
-    OPENAPI_SPECS_K8S_DIR = "${openapi_specs.k8s.specs}";
+    name = "nickel-kubernetes";
+    nativeBuildInputs = with pkgs; [ cargo nickel nix nixfmt rustfmt ];
 
     shellHook = ''
       export TERM=xterm
@@ -50,7 +99,8 @@ let
       # Explicitly expose openapi specs for k8s
       ln -fs ${openapi_specs.k8s.specs} ./openapi-specs-k8s
 
-      echo 'Welcome to ${name} development shell!'
+      echo 'Welcome to nickel-kubernetes development shell!'
+      echo 'Sup: ${nickel_defs.all}'
     '';
   };
-in { shell = shell; }
+in { shell = shell; nickel_defs = nickel_defs.all; }
