@@ -146,4 +146,7 @@ let
       echo 'Sup: ${nickel_defs.all}'
     '';
   };
-in { shell = shell; nickel_defs = nickel_defs.all; }
+in {
+  shell = shell;
+  nickel_defs = nickel_defs.all;
+}
