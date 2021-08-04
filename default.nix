@@ -24,6 +24,28 @@ let
   };
 
   openapi_specs = {
+    argo_workflows = {
+      version_to_sha256 = {
+        "3.1.5" = "u2DMqSNDt+wqSeTwYhL44TtzZXXdOcPuvAOQM8w20KM=";
+      };
+      swagger_files = pkgs.lib.mapAttrs (version: sha256:
+        pkgs.fetchurl {
+          url =
+            "https://raw.githubusercontent.com/argoproj/argo-workflows/v${version}/api/openapi-spec/swagger.json";
+          sha256 = sha256;
+        }) openapi_specs.argo_workflows.version_to_sha256;
+      specs = pkgs.stdenv.mkDerivation {
+        name = "openapi-specs-argo-workflows";
+        phases = [ "installPhase" ];
+
+        installPhase = ''
+          mkdir -p $out
+          ${pkgs.lib.foldl (p: c: p + "\n" + c) "" (pkgs.lib.mapAttrsToList
+            (version: path: "ln -fs ${path} $out/${version}.json")
+            openapi_specs.argo_workflows.swagger_files)}
+        '';
+      };
+    };
     k8s = {
       version_to_sha256 = {
         "1.12.10" = "o3uZ9N2FDkp3GuIEdVnfnCFQJZ9Hef4+OO3t0eC9qYs=";
@@ -63,8 +85,28 @@ let
       phases = [ "installPhase" ];
 
       installPhase = ''
+        mkdir -p $out/argo_workflows
+        cp -R ${nickel_defs.argo_workflows}/* $out/argo_workflows
         mkdir -p $out/kubernetes
         cp -R ${nickel_defs.k8s}/* $out/kubernetes
+      '';
+    };
+    argo_workflows = pkgs.stdenv.mkDerivation {
+      name = "nickel-argo-workflows";
+      phases = [ "buildPhase" "installPhase" ];
+
+      nativeBuildInputs = [ pkgs.coreutils-full openapi2_to_nickel ];
+
+      buildPhase = ''
+        for filename in "${openapi_specs.argo_workflows.specs}"/*.json; do
+          mkdir -p ./argo_workflows/"$(basename $filename .json)"
+          openapi2-to-nickel $filename > ./argo_workflows/"$(basename $filename .json)/argo_workflows.ncl"
+        done
+      '';
+
+      installPhase = ''
+        mkdir -p $out
+        mv ./argo_workflows/* $out/
       '';
     };
     k8s = pkgs.stdenv.mkDerivation {
@@ -98,6 +140,7 @@ let
 
       # Explicitly expose openapi specs for k8s
       ln -fs ${openapi_specs.k8s.specs} ./openapi-specs-k8s
+      ln -fs ${openapi_specs.argo_workflows.specs} ./openapi-specs-argo-workflows
 
       echo 'Welcome to nickel-kubernetes development shell!'
       echo 'Sup: ${nickel_defs.all}'

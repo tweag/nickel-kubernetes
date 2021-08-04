@@ -18,4 +18,5 @@ command -v nix >/dev/null 2>&1 || {
 trap "rm -rf ${SCRIPT_DIR}/../result" SIGINT SIGTERM EXIT
 cd "${SCRIPT_DIR}/.." && nix build && {
   cp -rf "${SCRIPT_DIR}/../result/kubernetes"/* ./kubernetes/
+  cp -rf "${SCRIPT_DIR}/../result/argo_workflows"/* ./argo-workflows/
 }

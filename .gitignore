@@ -1,4 +1,6 @@
 target
 result
+openapi-specs-argo-workflows
 openapi-specs-k8s
+argo-workflows
 kubernetes
