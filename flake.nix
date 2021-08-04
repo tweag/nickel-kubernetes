@@ -12,12 +12,12 @@
       defaultPackage = (import ./default.nix {
         system = system;
         pkgs = pkgs.legacyPackages.${system};
-        nickel = nickel.defaultPackage.${system};
+        nickel = nickel.defaultPackage.${system} or null;
       }).nickel_defs;
       devShell = (import ./default.nix {
         system = system;
         pkgs = pkgs.legacyPackages.${system};
-        nickel = nickel.defaultPackage.${system};
+        nickel = nickel.defaultPackage.${system} or null;
       }).shell;
     });
 }
