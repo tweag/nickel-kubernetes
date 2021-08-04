@@ -22,18 +22,16 @@ let
           url =
             "https://raw.githubusercontent.com/kubernetes/kubernetes/v${version}/api/openapi-spec/swagger.json";
           sha256 = sha256;
-      }) openapi_specs.k8s.version_to_sha256;
+        }) openapi_specs.k8s.version_to_sha256;
       specs = pkgs.stdenv.mkDerivation {
         name = "openapi-specs-k8s";
         phases = [ "installPhase" ];
 
         installPhase = ''
           mkdir -p $out
-          ${
-            pkgs.lib.foldl (p: c: p + "\n" + c) "" (pkgs.lib.mapAttrsToList
-              (version: path: "ln -fs ${path} $out/${version}.json")
-              openapi_specs.k8s.swagger_files)
-          }
+          ${pkgs.lib.foldl (p: c: p + "\n" + c) "" (pkgs.lib.mapAttrsToList
+            (version: path: "ln -fs ${path} $out/${version}.json")
+            openapi_specs.k8s.swagger_files)}
         '';
       };
     };

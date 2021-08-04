@@ -4,8 +4,8 @@ use rstest::{
   rstest,
 };
 
-use tweag_gen_k8s_nickel::as_ncl::AsNcl;
-use tweag_gen_k8s_nickel::k8s::get_k8s_specs;
+use openapi2_to_nickel::as_ncl::AsNcl;
+use openapi2_to_nickel::k8s::get_k8s_specs;
 
 #[fixture]
 fn openapi_k8s_def_fxt() -> Option<Spec> {

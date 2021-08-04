@@ -7,9 +7,9 @@ use clap::{
   Arg,
 };
 
-use tweag_gen_k8s_nickel::as_ncl::AsNcl;
-use tweag_gen_k8s_nickel::format::format_ncl;
-use tweag_gen_k8s_nickel::k8s::get_k8s_specs;
+use openapi2_to_nickel::as_ncl::AsNcl;
+use openapi2_to_nickel::format::format_ncl;
+use openapi2_to_nickel::k8s::get_k8s_specs;
 
 fn main() {
   let matches = App::new(crate_name!())

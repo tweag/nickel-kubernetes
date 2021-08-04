@@ -1,5 +1,5 @@
 [package]
-name = "tweag-gen-k8s-nickel"
+name = "openapi2-to-nickel"
 version = "0.1.0"
 authors = ["agondek"]
 edition = "2018"

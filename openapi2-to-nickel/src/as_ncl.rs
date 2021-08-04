@@ -165,7 +165,12 @@ fn get_contract(schema: &openapi::v2::Schema) -> String {
       schema.ref_path.as_ref().map_or_else(
         || openapi_object_contract(&schema.properties, &k8s_group_version_kind),
         |ref_path| {
-          if schema.description.as_ref().map_or(&"".to_string(), |des| des).starts_with("Deprecated.") {
+          if schema
+            .description
+            .as_ref()
+            .map_or(&"".to_string(), |des| des)
+            .starts_with("Deprecated.")
+          {
             "= {}".to_string()
           } else {
             "#".to_string() + &_k8s_ref_to_ncl_id(ref_path.as_str())
@@ -184,7 +189,9 @@ fn get_contract(schema: &openapi::v2::Schema) -> String {
         .map_or("List <sensible_warning>".to_string(), |items| {
           format!("List {}", get_contract(&items))
         }),
-      "object" => openapi_object_contract(&schema.properties, &k8s_group_version_kind),
+      "object" => {
+        openapi_object_contract(&schema.properties, &k8s_group_version_kind)
+      }
       _ => "<sensible_warning>".to_string(),
     },
   )

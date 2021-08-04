@@ -22,4 +22,4 @@ NIX_FILES="$(find ${SCRIPT_DIR}/.. \
   -a -not -wholename '*/result/*' \) \
 )"
 
-rustfmt --config-path "${SCRIPT_DIR}/../gen-k8s-nickel/.rustfmt.toml" ${NIX_FILES}
+rustfmt --config-path "${SCRIPT_DIR}/../openapi2-to-nickel/.rustfmt.toml" ${NIX_FILES}

@@ -1,6 +1,6 @@
 use rstest::rstest;
 
-use tweag_gen_k8s_nickel::format::format_ncl;
+use openapi2_to_nickel::format::format_ncl;
 
 #[rstest]
 #[case("{a = 1}", "{\n  a = 1\n}")]
