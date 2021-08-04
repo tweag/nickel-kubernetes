@@ -15,4 +15,7 @@ jobs:
           experimental-features = nix-command flakes
           access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
     - run: nix build
-    - run: nix flake check
+    # Fix the following:
+    # error: a 'x86_64-darwin' with features {} is required to build '/nix/store/hni030gd4i5sras4q6zgyyihd0zfqb59-channel-rust-stable.toml.drv', 
+    # but I am a 'x86_64-linux' with features {benchmark, big-parallel, nixos-test, recursive-nix}
+    # - run: nix flake check
