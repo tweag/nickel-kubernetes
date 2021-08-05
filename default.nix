@@ -143,7 +143,6 @@ let
       ln -fs ${openapi_specs.argo_workflows.specs} ./openapi-specs-argo-workflows
 
       echo 'Welcome to nickel-kubernetes development shell!'
-      echo 'Sup: ${nickel_defs.all}'
     '';
   };
 in {
