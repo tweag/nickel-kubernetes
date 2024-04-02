@@ -1,52 +1,42 @@
-# `nickel-kubernetes`
+# Nickel Kubernetes
 
 [![built with nix](https://builtwithnix.org/badge.svg)](https://builtwithnix.org)
 
-This repository contains [Nickel](https://github.com/tweag/nickel) definitions of [Kubernetes](https://github.com/kubernetes/kubernetes) resources, allowing easy expression of k8s entities in Nickel language. Never write a yaml spaghetti again!
+This repository aims to be a framework to write Kubernetes resource definitions
+natively in Nickel. Never write a yaml spaghetti again!
+
+The medium term vision is that `nickel-kubernetes` can be used to easily set up
+a proper _developer environment_ with everything needed: Nickel contracts for
+Kubernetes resources, Nickel modules for common Kubernetes resources, proper
+settings for the LSP, etc. In practice, this repository will be mostly a
+collection of Nickel libraries, including auto-generated contracts for
+Kubernetes resources and Nickel modules.
+
+## Status
+
+Although the repository was created several years ago, this project started as
+an experiment which quickly came to an halt when the initial contributor
+couldn't devote time to it anymore. However, it just has been revived.
+Nickel-kubernetes is under active development, but it isn't ready to use yet.
+See the roadmap below for the next steps.
 
 ## Roadmap
 
-- [x] Generate nickel definitions out of Kubernetes openapi manifests
-- [x] Generate nickel definitions out of Argo Workflows openapi manifests
-- [ ] Differentiate between required and optional fields of k8s objects (otherwise schemas are nearly useless in real-life scenarios, as well as constructing minimal object from default values in made much harder; **gated by** [Nickel issue #373](https://github.com/tweag/nickel/issues/373))
-- [ ] Make sure k8s schemas disallow adding fields not defined in said schemas (otherwise the result is too sensitive to typos in field names; **gated by** [Nickel issue #303](https://github.com/tweag/nickel/issues/303))
-- [ ] Provide appropriate default values, allowing for easy construction of minimal, viable k8s objects (**gated by** not having optional fields)
-- [ ] Expand the testing suite
-- [ ] Enrich constraints imposed by openapi specs (they are far too lenient - i.e. make sure that ip addresses are actual ip addresses)
-- [ ] Enrich constraints with descriptions obtained from openapi specs
+- [ ] Pipe
+   [json-schema-to-nickel](https://github.com/nickel-lang/json-schema-to-nickel)
+   and [kubernetes-json-schema](https://github.com/yannh/kubernetes-json-schema)
+   together to auto-generate Nickel contracts for Kubernetes resource
+   definitions
+- [ ] Do the same for argo workflows using [official argo schemas](https://github.com/argoproj/argo-workflows/tree/main/api/jsonschema)
+- [ ] Provide composable partial configuration to easily write Kubernetes
+   resources (think Helm charts but without a proper configuration language
+   instead of templating)
+- [ ] Expand the test suite
+- [ ] Enrich constraints imposed by openapi specs (they are far too lenient -
+      i.e. make sure that IP addresses are actual IP addresses)
+- [ ] Enrich constraints with descriptions obtained from openAPI specs
 
-## Pre-requirements
-[Nix](https://nixos.org/download.html) package manager with [flakes](https://nixos.wiki/wiki/Flakes#Non-NixOS) enabled.
+## Requirements
 
-## Generating nickel definitions
-```
-$ ./scripts/regenerate-defs.sh
-# or
-$ nix build
-```
-
-## Intended* usage
-```
-let k8s = include "kubernetes/1.23.3/k8s.ncl" in
-let nginxDeployment = { 
-  metadata = {
-    name = "nginx"
-  } & (k8s.io_k8s_apimachinery_pkg_apis_meta_v1_ObjectMeta),
-  spec = {
-    template = {
-      spec = {
-        containers = [
-          {
-            image = "docker.io/library/nginx:latest",
-            name = "nginx",
-          } & (k8s.io_k8s_api_core_v1_Container),
-        ],
-      } & (k8s.io_k8s_api_core_v1_PodSpec),
-    } & (k8s.io_k8s_api_core_v1_PodTemplateSpec),
-  } & (k8s.io_k8s_api_apps_v1_DeploymentSpec),
-} & (k8s.io_k8s_api_apps_v1_Deployment) in
-builtins.serialize `Json (nginxDeployment | #(k8s.io_k8s_api_apps_v1_Deployment))
-
-```
-
-* Unfortunately, the project is not yet there (but is getting there!)
+You need the [Nix](https://nixos.org/download.html) package manager with
+[flakes](https://nixos.wiki/wiki/Flakes#Non-NixOS) enabled.
