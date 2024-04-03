@@ -54,6 +54,8 @@
           '';
         };
 
+        json-schema-ref-parser = pkgs.callPackage ./nix/json-schema-ref-parser.nix { };
+
         latestK8sVersion = "v1.29.3";
       in
       {
