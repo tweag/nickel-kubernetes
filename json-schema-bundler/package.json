@@ -1,0 +1,23 @@
+{
+  "name": "json-schema-bundler",
+  "version": "1.0.0",
+  "description": "CLI tool to make an offline bundle of a JSON schema by inlining all external references",
+  "main": "./bin/index.mjs",
+  "bin": {
+    "json-schema-bundler": "./bin/index.mjs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "json-schema",
+    "ref",
+    "bundle",
+    "inline"
+  ],
+  "author": "Yann Hamdaoui <yann.hamdaoui@moduscreate.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@apidevtools/json-schema-ref-parser": "^11.5.4"
+  }
+}
