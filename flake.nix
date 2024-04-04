@@ -30,7 +30,7 @@
         # `kubernetes-json-schema` (as a derivation)
         k8sSchemasDrv = { version ? latestK8sVersion }: pkgs.srcOnly {
           name = "k8s-schemas-${version}";
-          src = k8sSchemas {inherit version;};
+          src = k8sSchemas { inherit version; };
         };
 
         # Generate Nickel contracts from K8s JSON schemas using
@@ -39,31 +39,50 @@
           name = "k8s-contracts-${version}";
           src = k8sSchemas { inherit version; };
           phases = [ "buildPhase" "installPhase" ];
-          nativeBuildInputs = [ pkgs.coreutils-full json-schema-to-nickel ];
+          nativeBuildInputs = [
+            pkgs.coreutils-full
+            json-schema-to-nickel
+            json-schema-bundler
+          ];
 
           buildPhase = ''
             mkdir -p contracts
             for filename in "${k8sSchemas {inherit version;}}"/*.json; do
-              json-schema-to-nickel $filename > ./contracts/"$(basename $filename .json)".ncl
+              basename="$(basename $filename .json)"
+              urlRewritten="$basename-url-rewritten.json"
+              bundled="$basename-bundled.json"
+
+              # Rewrite ref URLs to local file accesses, which we can do because
+              # all references are actually local and pointing to the
+              # kubernetes-json-schema repository, which is already in the store
+              sed 's%"\$ref": "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master%"$ref": "${k8sSchemasRepo}%g' "$filename" > "$urlRewritten"
+
+              json-schema-bundler "$urlRewritten" > "$bundled"
+              json-schema-to-nickel "$bundled" > ./contracts/"$basename".ncl
             done
           '';
 
           installPhase = ''
             mkdir -p $out
-            mv ./contracts $out/
+            mv ./*.json $out/
+            mv ./contracts $out
           '';
         };
 
-        json-schema-ref-parser = pkgs.callPackage ./nix/json-schema-ref-parser.nix { };
+        json-schema-bundler = (pkgs.callPackage ./json-schema-bundler { }).package;
 
         latestK8sVersion = "v1.29.3";
       in
       {
-        packages = rec {
-          default = contracts;
-          schemas = k8sSchemasDrv { };
-          contracts = k8sContracts { };
-        };
+        packages =
+          # avoid the recursive capture of `json-schema-bundler`
+          let json-schema-bundler' = json-schema-bundler; in
+          rec {
+            default = contracts;
+            schemas = k8sSchemasDrv { };
+            contracts = k8sContracts { };
+            json-schema-bundler = json-schema-bundler';
+          };
 
         devShells.default = pkgs.mkShell {
           buildInputs = [ pkgs.nickel ];

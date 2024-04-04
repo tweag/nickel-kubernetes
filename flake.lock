@@ -351,11 +351,11 @@
         "topiary": "topiary_2"
       },
       "locked": {
-        "lastModified": 1709630703,
-        "narHash": "sha256-klLV4R8tnq5VHMZ3zwdOmDKtgTwuvZ2niKr/u/EAykw=",
+        "lastModified": 1712151944,
+        "narHash": "sha256-5GKCi95XEYjWgHnXNSTb0ENFWogR9png8doni/KqwqM=",
         "owner": "nickel-lang",
         "repo": "json-schema-to-nickel",
-        "rev": "93f87c72bdf359a6becb894c06faff4c148f8de6",
+        "rev": "3a3432e124175019ecfce70fb397d11469a7b5f8",
         "type": "github"
       },
       "original": {
