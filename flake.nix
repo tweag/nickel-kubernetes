@@ -75,13 +75,11 @@
       in
       {
         packages =
-          # avoid the recursive capture of `json-schema-bundler`
-          let json-schema-bundler' = json-schema-bundler; in
-          rec {
-            default = contracts;
+          {
+            default = inputs.self.packages.${system}.contracts;
             schemas = k8sSchemasDrv { };
             contracts = k8sContracts { };
-            json-schema-bundler = json-schema-bundler';
+            inherit json-schema-bundler;
           };
 
         devShells.default = pkgs.mkShell {
