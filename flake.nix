@@ -48,7 +48,7 @@
           buildPhase = ''
             mkdir -p contracts
             for filename in "${k8sSchemas {inherit version;}}"/*.json; do
-              basename="$(basename $filename .json)"
+              basename="$(basename "$filename" .json)"
               urlRewritten="$basename-url-rewritten.json"
               bundled="$basename-bundled.json"
 
