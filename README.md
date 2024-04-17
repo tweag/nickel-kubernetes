@@ -18,11 +18,16 @@ Although the repository was created several years ago, this project started as
 an experiment which quickly came to an halt when the initial contributor
 couldn't devote time to it anymore. However, it just has been revived.
 Nickel-kubernetes is under active development, but it isn't ready to use yet.
+
+You'll find auto-generated Nickel contracts for Kubernetes resources for some
+selected versions of the Kubernetes API in the `kubernetes-contracts` directory.
+You can simply import them and apply them to your Nickel configurations.
+
 See the roadmap below for the next steps.
 
 ## Roadmap
 
-- [ ] Pipe
+- [x] Pipe
    [json-schema-to-nickel](https://github.com/nickel-lang/json-schema-to-nickel)
    and [kubernetes-json-schema](https://github.com/yannh/kubernetes-json-schema)
    together to auto-generate Nickel contracts for Kubernetes resource
@@ -38,5 +43,9 @@ See the roadmap below for the next steps.
 
 ## Requirements
 
-You need the [Nix](https://nixos.org/download.html) package manager with
-[flakes](https://nixos.wiki/wiki/Flakes#Non-NixOS) enabled.
+Most content that we intend to serve will be pure Nickel code, that you can just
+clone and use.
+
+To hack on this repository, such as generating contracts for a new version of
+the API, you need the [Nix](https://nixos.org/download.html) package manager
+with [flakes](https://nixos.wiki/wiki/Flakes#Non-NixOS) enabled.
