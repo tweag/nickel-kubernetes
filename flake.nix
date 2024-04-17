@@ -24,7 +24,7 @@
           hash = "sha256-Vd3iHeB7LvFDNu+m/RE2P6zgRhNJemiE+j1AAuc6swo=";
         };
 
-        k8sSchemas = { version ? latestK8sVersion }: k8sSchemasRepo + "/${version}";
+        k8sSchemas = { version ? latestK8sVersion }: k8sSchemasRepo + "/${version}-standalone-strict";
 
         # K8s JSON schemas of a specific K8s version taken from
         # `kubernetes-json-schema` (as a derivation)
@@ -35,7 +35,10 @@
 
         # Generate Nickel contracts from K8s JSON schemas using
         # `json-schema-to-nickel`.
-        k8sContracts = { version ? latestK8sVersion }: pkgs.stdenv.mkDerivation {
+        #
+        # Pass `keepJsonArtifacts = true` to keep the JSON artifacts (original
+        # and processed JSON schemas) for debugging purposes.
+        k8sContracts = { version ? latestK8sVersion, keepJsonArtifacts ? false }: pkgs.stdenv.mkDerivation {
           name = "k8s-contracts-${version}";
           src = k8sSchemas { inherit version; };
           phases = [ "buildPhase" "installPhase" ];
@@ -47,26 +50,21 @@
 
           buildPhase = ''
             mkdir -p contracts
+
             for filename in "${k8sSchemas {inherit version;}}"/*.json; do
               basename="$(basename "$filename" .json)"
-              urlRewritten="$basename-url-rewritten.json"
               bundled="$basename-bundled.json"
 
-              # Rewrite ref URLs to local file accesses, which we can do because
-              # all references are actually local and pointing to the
-              # kubernetes-json-schema repository, which is already in the store
-              sed 's%"\$ref": "https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master%"$ref": "${k8sSchemasRepo}%g' "$filename" > "$urlRewritten"
-
-              json-schema-bundler "$urlRewritten" > "$bundled"
+              json-schema-bundler "$filename" > "$bundled"
               json-schema-to-nickel "$bundled" > ./contracts/"$basename".ncl
             done
           '';
 
           installPhase = ''
             mkdir -p $out
-            mv ./*.json $out/
             mv ./contracts $out
-          '';
+          '' ++
+          nixpkgs.lib.optionalString keepJsonArtifacts "mv ./*.json $out/";
         };
 
         json-schema-bundler = (pkgs.callPackage ./json-schema-bundler { }).package;
