@@ -34,8 +34,8 @@ See the roadmap below for the next steps.
    definitions
 - [ ] Do the same for argo workflows using [official argo schemas](https://github.com/argoproj/argo-workflows/tree/main/api/jsonschema)
 - [ ] Provide composable partial configuration to easily write Kubernetes
-   resources (think Helm charts but without a proper configuration language
-   instead of templating)
+   resources (think Helm charts but with a proper configuration language
+   instead of string templating)
 - [ ] Expand the test suite
 - [ ] Enrich constraints imposed by openapi specs (they are far too lenient -
       i.e. make sure that IP addresses are actual IP addresses)
