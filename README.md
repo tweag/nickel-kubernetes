@@ -16,14 +16,23 @@ Kubernetes resources and Nickel modules.
 
 Although the repository was created several years ago, this project started as
 an experiment which quickly came to an halt when the initial contributor
-couldn't devote time to it anymore. However, it just has been revived.
-Nickel-kubernetes is under active development, but it isn't ready to use yet.
+couldn't devote time to it anymore. However, it has been revived since and is
+under active development.
+
+## Content
 
 You'll find auto-generated Nickel contracts for Kubernetes resources for some
 selected versions of the Kubernetes API in the `kubernetes-contracts` directory.
 You can simply import them and apply them to your Nickel configurations.
 
-See the roadmap below for the next steps.
+**IMPORTANT**: the generated contracts are all implicitly relying on a Nickel
+library which is located inside each contract directory
+`kubernetes-contracts/vX.Y.Z` in the `.js2n-lib` subdirectory. If you want to
+use only a few selected contracts without pulling the whole contract directory
+in, make sure to copy the library as well (which must either be located in the
+same directory as the contracts or must be made available through the Nickel
+import path - see the documentation of `--import-path` by running `nickel help
+export`).
 
 ## Roadmap
 
