@@ -63,8 +63,8 @@
           installPhase = ''
             mkdir -p $out
             mv ./contracts $out
-          '' ++
-          nixpkgs.lib.optionalString keepJsonArtifacts "mv ./*.json $out/";
+
+          '' + nixpkgs.lib.optionalString keepJsonArtifacts "mv ./*.json $out/";
         };
 
         json-schema-bundler = (pkgs.callPackage ./json-schema-bundler { }).package;
