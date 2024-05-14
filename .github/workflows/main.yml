@@ -6,16 +6,11 @@ jobs:
   build_and_test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2.3.4
-    - uses: cachix/install-nix-action@v13
+    - uses: actions/checkout@v4
+    - uses: cachix/install-nix-action@v26
       with:
-        install_url: https://nixos-nix-install-tests.cachix.org/serve/i6laym9jw3wg9mw6ncyrk6gjx4l34vvx/install
-        install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
-        extra_nix_config: |
-          experimental-features = nix-command flakes
-          access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-    - run: nix build
-    # Fix the following:
-    # error: a 'x86_64-darwin' with features {} is required to build '/nix/store/hni030gd4i5sras4q6zgyyihd0zfqb59-channel-rust-stable.toml.drv', 
-    # but I am a 'x86_64-linux' with features {benchmark, big-parallel, nixos-test, recursive-nix}
-    # - run: nix flake check
+        github_access_token: ${{ secrets.GITHUB_TOKEN }}
+    - run: nix config check || nix doctor
+    - run: nix flake check
+    # disabled- uses too much disk space on the runner.
+    # - run: nix build
