@@ -20,8 +20,8 @@
         k8sSchemasRepo = pkgs.fetchFromGitHub {
           owner = "yannh";
           repo = "kubernetes-json-schema";
-          rev = "f8b907d7210830dfecbf976c2ba3c849bcf0cace";
-          hash = "sha256-Vd3iHeB7LvFDNu+m/RE2P6zgRhNJemiE+j1AAuc6swo=";
+          rev = "f5e9af7e64b63484e2bf2ee28afee3f3f8e2e9b1";
+          hash = "sha256-mVE7bHSGoM9XtVmRMEqRDtJ3IRMA1TjtiQRllH6Yrus=";
         };
 
         k8sSchemas = { version ? latestK8sVersion }: k8sSchemasRepo + "/${version}-standalone-strict";
@@ -69,7 +69,7 @@
 
         json-schema-bundler = (pkgs.callPackage ./json-schema-bundler { }).package;
 
-        latestK8sVersion = "v1.29.3";
+        latestK8sVersion = "v1.31.0";
       in
       {
         packages =
