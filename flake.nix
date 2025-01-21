@@ -70,7 +70,7 @@
 
         json-schema-bundler = (pkgs.callPackage ./json-schema-bundler { }).package;
 
-        latestK8sVersion = "v1.31.1";
+        latestK8sVersion = "v1.32.1";
       in
       {
         packages =
