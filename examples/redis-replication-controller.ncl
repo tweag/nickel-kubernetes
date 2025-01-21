@@ -1,5 +1,5 @@
 # Example of a non conform Kubernetes resource
-let ReplicationController = import "../kubernetes-contracts/v1.29.3/replicationcontroller-v1.ncl" in
+let ReplicationController = import "../kubernetes-contracts/v1.32.1/replicationcontroller-v1.ncl" in
 
 {
   config = {
