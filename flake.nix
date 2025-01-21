@@ -1,10 +1,11 @@
 {
-  description = "nickel-kubernetes: Nickel libraries and tools to write Kubernetes resources natively in Nickel";
+  description = "Nickel libraries and tools to write Kubernetes resources natively in Nickel";
 
   inputs = {
     flake-utils.url = "github:numtide/flake-utils";
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
-    json-schema-to-nickel.url = "github:nickel-lang/json-schema-to-nickel";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
+    json-schema-to-nickel.url =
+      "github:nickel-lang/json-schema-to-nickel";
   };
 
   outputs = { self, nixpkgs, flake-utils, ... }@inputs:
@@ -20,8 +21,8 @@
         k8sSchemasRepo = pkgs.fetchFromGitHub {
           owner = "yannh";
           repo = "kubernetes-json-schema";
-          rev = "f5e9af7e64b63484e2bf2ee28afee3f3f8e2e9b1";
-          hash = "sha256-mVE7bHSGoM9XtVmRMEqRDtJ3IRMA1TjtiQRllH6Yrus=";
+          rev = "56ef77e188aff6aee3c2fbb0a24fa033db4c5d40";
+          hash = "sha256-crczmGonaYo6wwJWly000XoAkH5AhgU452ex5BPoLxA=";
         };
 
         k8sSchemas = { version ? latestK8sVersion }: k8sSchemasRepo + "/${version}-standalone-strict";
@@ -69,7 +70,7 @@
 
         json-schema-bundler = (pkgs.callPackage ./json-schema-bundler { }).package;
 
-        latestK8sVersion = "v1.31.0";
+        latestK8sVersion = "v1.31.1";
       in
       {
         packages =
