@@ -1,2038 +1,1374 @@
 # DO NOT EDIT
 # This file was automatically generated using json-schema-to-nickel
-let _js2n__-prdslib
-  = let error_lib
-    : {
-      at_field : String
-      -> [|
-          'Ok,
-          'Error {
-            message : String,
-            source : Array [| '"Array" Number, 'Field String |]
-          }
-        |]
-      -> [|
-        'Ok,
-        'Error {
-          message : String,
-          source : Array [| '"Array" Number, 'Field String |]
-        }
-      |],
-      at_index : Number
-      -> [|
-          'Ok,
-          'Error {
-            message : String,
-            source : Array [| '"Array" Number, 'Field String |]
-          }
-        |]
-      -> [|
-        'Ok,
-        'Error {
-          message : String,
-          source : Array [| '"Array" Number, 'Field String |]
-        }
-      |],
-      combine : String
-      -> Array
-          {
-            message : String,
-            source : Array [| '"Array" Number, 'Field String |]
-          }
-      -> {
-        message : String,
-        source : Array [| '"Array" Number, 'Field String |]
-      },
-      error_to_string : {
-          message : String,
-          source : Array [| '"Array" Number, 'Field String |]
-        }
-      -> String,
-      to_validator_result : [|
-          'Ok,
-          'Error {
-            message : String,
-            source : Array [| '"Array" Number, 'Field String |]
-          }
-        |]
-      -> [|
-        'Ok,
-        'Error { message | String | optional, notes | Array String | optional, }
-      |],
-      source_to_string : {
-          message : String,
-          source : Array [| '"Array" Number, 'Field String |]
-        }
-      -> String,
-      mk_error : String
-      -> [|
-        'Ok,
-        'Error {
-          message : String,
-          source : Array [| '"Array" Number, 'Field String |]
-        }
-      |]
-    }
-    = {
-      at_field
-        | doc m%"
-          Prepend a given field name to the error source of this result, if it is an
-          `'Error`. Returns the result unchanged if it is an `'Ok`.
-        "%
-        = fun
-            field
-            =>
-            match {
-              'Ok =>
-                'Ok,
-              'Error
-              error =>
-                'Error
-                  {
-                    message = error.message,
-                    source = std.array.prepend ('Field field) error.source,
-                  },
-            },
-      at_index
-        | doc m%"
-          Prepend an array access at the specificed index to the error source of
-          this result, if it is an `'Error`. Returns the result unchanged if it is
-          an `'Ok`.
-        "%
-        = fun
-            index
-            =>
-            match {
-              'Ok =>
-                'Ok,
-              'Error
-              error =>
-                'Error
-                  {
-                    message = error.message,
-                    source = std.array.prepend ('"Array" index) error.source,
-                  },
-            },
-      combine
-        | doc m%"
-          Combines an array of errors into a single error with a given initial message.
-          Each error message will be listed after the initial message together
-          with their source rendered as a path.
-        "%
-        = fun
-            init_msg
-            errors
-            =>
-            let msgs
-              = std.string.join
-                m%"
-                  
-                  
-                "%
-                (std.array.map (fun error => " • %{error_to_string error}")
-                  errors)
-              in
-            {
-                message =
-                  m%"
-                      %{init_msg}
-                      %{msgs}
-                    "%,
-                source = [  ],
-              },
-      error_to_string
-        | doc "Converts an error to a string representation, including the source."
-        = fun
-            error
-            =>
-            let location
-              = if error.source == [  ] then
-                ""
+let js2n
+  = {
+    Always
+      | doc m%"
+        A contract that always succeeds. The same as `Dyn`, but with a more JSON-schema name.
+        
+        # Examples
+        
+        ```nickel multiline
+        "foo" | Always
+        
+        3 | Always
+        ```
+      "% = Dyn,
+    Const
+      | Dyn -> Dyn
+      | doc m%"
+        A more eager version of `std.contract.Equal`.
+        
+        # Examples
+        
+        ```nickel multiline
+        5 | Const 5
+        
+        3 | Const 5
+        # => error
+        ```
+      "%
+      = fun
+          expected
+          =>
+          std.contract.from_validator
+            (fun
+              value
+              =>
+              if value == expected then
+                'Ok
               else
-                "at %{source_to_string error}: "
-              in
-            "%{location}%{error.message}",
-      mk_error
-        | doc "Creates a fresh error with a given message and an empty source."
-        = fun msg => 'Error { message = msg, source = [  ], },
-      source_to_string
-        : {
-            message : String,
-            source : Array [| '"Array" Number, 'Field String |]
-          }
-        -> String
-        | doc "Renders an error source location as a string."
-        = fun
-            { source, .. }
-            =>
-            std.array.fold_left
-              (fun
-                acc
-                =>
-                match {
-                  '"Array"
-                  index =>
-                    "%{acc}[%{std.string.from_number index}]",
-                  'Field
-                  field =>
-                    "%{acc}.%{field}",
-                }) "" source,
-      to_validator_result
-        | doc m%"
-          Converts a json-schema-to-nickel result type to the error type expected
-          from validators in the Nickel stdlib.
-        "%
-        = match {
-            'Ok =>
-              'Ok,
-            'Error
-            error =>
-              ('Error { message = error_to_string error, notes = [  ], })
-              | _,
-          },
-    }
-    in
-  {
-      allOf
-        : Array (
-            Dyn
-            -> [|
-              'Ok,
-              'Error {
-                message : String,
-                source : Array [| '"Array" Number, 'Field String |]
-              }
-            |]
-          )
-        -> Dyn
-        -> [|
-          'Ok,
-          'Error {
-            message : String,
-            source : Array [| '"Array" Number, 'Field String |]
-          }
-        |]
-        | doc m%"
-          `allOf preds` succeeds if all of the predicates in `preds` succeed
-          Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.7.1]
-        "%
-        = fun
-            preds
-            x
-            =>
-            std.array.fold_right
-              (fun
-                pred
-                acc
-                =>
-                (match { 'Ok => acc, error @ 'Error _ => error, }) (pred x)) 'Ok
-              preds,
-      always
-        : Dyn
-        -> [|
-          'Ok,
-          'Error {
-            message : String,
-            source : Array [| '"Array" Number, 'Field String |]
-          }
-        |]
-        = std.function.const 'Ok,
-      anyOf
-        : Array (
-            Dyn
-            -> [|
-              'Ok,
-              'Error {
-                message : String,
-                source : Array [| '"Array" Number, 'Field String |]
-              }
-            |]
-          )
-        -> Dyn
-        -> [|
-          'Ok,
-          'Error {
-            message : String,
-            source : Array [| '"Array" Number, 'Field String |]
-          }
-        |]
-        | doc m%"
-          `anyOf preds` succeeds if at least one of the predicates in `preds` succeeds
-          Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.7.2]
-        "%
-        = fun
-            preds
-            x
-            =>
-            (match {
-              'Ok =>
-                'Ok,
-              'Errors
-              errors =>
-                'Error
-                  (error_lib.combine "anyOf: none of the options matched"
-                    errors),
-            })
-              (std.array.fold_right
-                (fun
-                  pred
-                  acc
+                'Error { message = "expected %{std.to_string expected}" }),
+    Enum
+      | Array Dyn -> Dyn
+      | doc m%"
+        `Enum values x` succeeds if and only if `x` is equal to one of the elements of `values`.
+        
+        # Examples
+        
+        ```nickel multiline
+        "no" | Enum [false, "false", "no", "off"]
+        
+        "yes" | Enum [false, "false", "no", "off"]
+        # => error
+        ```
+      "%
+      = fun
+          variants
+          =>
+          std.contract.from_validator
+            (fun
+              value
+              =>
+              let check_equal
+                = fun
+                  input
+                  variant
                   =>
-                  (match {
-                    'Ok =>
-                      'Ok,
-                    'Errors
-                    errors =>
-                      (match {
-                        'Ok =>
-                          'Ok,
-                        'Error
-                        error =>
-                          'Errors (std.array.prepend error errors),
-                      }) (pred x),
-                  }) acc) ('Errors [  ]) preds),
-      arrays =
-        let error_lib
-            : {
-              at_field : String
-              -> [|
-                  'Ok,
-                  'Error {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-                |]
-              -> [|
-                'Ok,
-                'Error {
-                  message : String,
-                  source : Array [| '"Array" Number, 'Field String |]
-                }
-              |],
-              at_index : Number
-              -> [|
-                  'Ok,
-                  'Error {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-                |]
-              -> [|
-                'Ok,
-                'Error {
-                  message : String,
-                  source : Array [| '"Array" Number, 'Field String |]
-                }
-              |],
-              combine : String
-              -> Array
-                  {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-              -> {
-                message : String,
-                source : Array [| '"Array" Number, 'Field String |]
-              },
-              error_to_string : {
-                  message : String,
-                  source : Array [| '"Array" Number, 'Field String |]
-                }
-              -> String,
-              to_validator_result : [|
-                  'Ok,
-                  'Error {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-                |]
-              -> [|
-                'Ok,
-                'Error {
-                  message | String | optional,
-                  notes | Array String | optional,
-                }
-              |],
-              source_to_string : {
-                  message : String,
-                  source : Array [| '"Array" Number, 'Field String |]
-                }
-              -> String,
-              mk_error : String
-              -> [|
-                'Ok,
-                'Error {
-                  message : String,
-                  source : Array [| '"Array" Number, 'Field String |]
-                }
-              |]
-            }
-            = {
-              at_field
-                | doc m%"
-                  Prepend a given field name to the error source of this result, if it is an
-                  `'Error`. Returns the result unchanged if it is an `'Ok`.
-                "%
-                = fun
-                    field
-                    =>
-                    match {
-                      'Ok =>
-                        'Ok,
-                      'Error
-                      error =>
-                        'Error
-                          {
-                            message = error.message,
-                            source =
-                              std.array.prepend ('Field field) error.source,
-                          },
-                    },
-              at_index
-                | doc m%"
-                  Prepend an array access at the specificed index to the error source of
-                  this result, if it is an `'Error`. Returns the result unchanged if it is
-                  an `'Ok`.
-                "%
-                = fun
-                    index
-                    =>
-                    match {
-                      'Ok =>
-                        'Ok,
-                      'Error
-                      error =>
-                        'Error
-                          {
-                            message = error.message,
-                            source =
-                              std.array.prepend ('"Array" index) error.source,
-                          },
-                    },
-              combine
-                | doc m%"
-                  Combines an array of errors into a single error with a given initial message.
-                  Each error message will be listed after the initial message together
-                  with their source rendered as a path.
-                "%
-                = fun
-                    init_msg
-                    errors
-                    =>
-                    let msgs
-                      = std.string.join
-                        m%"
-                          
-                          
-                        "%
-                        (std.array.map
-                          (fun error => " • %{error_to_string error}") errors)
-                      in
+                  (input == variant)
+                  || ((std.is_enum input)
+                  && (((std.string.from_enum input) == variant)
+                  | Bool))
+                in
+              if std.array.any (check_equal value) variants then
+                  'Ok
+                else
+                  'Error
                     {
-                        message =
-                          m%"
-                              %{init_msg}
-                              %{msgs}
-                            "%,
-                        source = [  ],
-                      },
-              error_to_string
-                | doc "Converts an error to a string representation, including the source."
-                = fun
-                    error
+                      message =
+                        "expected one of %{std.serialize 'Json variants}"
+                    }),
+    IfThenElse
+      | Dyn -> Dyn -> Dyn -> Dyn
+      | doc m%"
+        `IfThenElse iph zen els` checks the `iph` contract (eagerly). If that
+        succeeds, it checks the `zen` contract and otherwise checks the `els`
+        contract.
+        
+        Only the eager part of the `iph` contract is used to decide which of the
+        other contracts is applied. The lazy part of the `iph` contract will be
+        applied if the eager part succeeds.
+        
+        # Examples
+        
+        ```nickel multiline
+        6 | IfThenElse Number (number.MultipleOf 2) String
+        
+        "hi" | IfThenElse Number (number.MultipleOf 2) String
+        
+        true | IfThenElse Number (number.MultipleOf 2) String
+        # => error
+        
+        # The `zen` branch gets the value that was normalized by TagOrString
+        "hi" | IfThenElse std.enum.TagOrString (std.contract.Equal 'hi) Number
+        ```
+      "%
+      = fun
+          iph
+          zen
+          els
+          =>
+          std.contract.custom
+            (fun
+              label
+              value
+              =>
+              (match {
+                'Ok
+                v =>
+                  std.contract.check zen label v,
+                'Error
+                _ =>
+                  std.contract.check els label value,
+              })
+                (std.contract.check iph label value)),
+    Never
+      | doc m%"
+        A contract that always fails.
+        
+        # Examples
+        
+        ```nickel multiline
+        "foo" | Never
+        # => error
+        
+        3 | Never
+        # => error
+      "% = std.contract.from_predicate (fun _ => false),
+    Null
+      | doc m%"
+        A contract asserting that a value is null.
+        
+        # Examples
+        
+        ```nickel multiline
+        null | Null
+        
+        "foo" | Null
+        # => error
+      "% = std.contract.from_predicate ((fun x0 x1 => x0 == x1) null),
+    Nullable
+      : Dyn -> Dyn
+      | doc m%"
+        For a contract `C`, `Nullable C` returns a contract that allows either `C` or a null value.
+        
+        # Examples
+        
+        ```nickel multiline
+        1 | Nullable Number
+        
+        null | Nullable Number
+        
+        "1" | Nullable Number
+        # => error
+        ```
+      "%
+      = fun
+          Contract
+          =>
+          std.contract.custom
+            (fun
+              label
+              value
+              =>
+              if value == null then
+                'Ok value
+              else
+                std.contract.check Contract label value),
+    OneOf
+      | Array Dyn -> Dyn
+      | doc m%"
+        Checks that exactly one of a list of contracts succeeds.
+        
+        # Examples
+        
+        ```nickel multiline
+        "hi" | OneOf [Number, String, Bool]
+        
+        "hi" | OneOf [Number, String, std.enum.TagOrString]
+        # => error: 2 of the contracts passed
+        
+        "hi" | OneOf [Number, std.enum.TagOrString]
+        # => 'hi
+        ```
+      "%
+      = fun
+          contracts
+          =>
+          std.contract.custom
+            (fun
+              label
+              value
+              =>
+              (match {
+                'Count
+                n =>
+                  'Error
+                    {
+                      message =
+                        "%{std.to_string
+                            n} of the contracts passed, expected precisely one to pass"
+                    },
+                'Ok
+                v =>
+                  'Ok v,
+              })
+                (std.array.fold_right
+                  (fun
+                    ctr
+                    acc
                     =>
-                    let location
-                      = if error.source == [  ] then
-                        ""
-                      else
-                        "at %{source_to_string error}: "
-                      in
-                    "%{location}%{error.message}",
-              mk_error
-                | doc "Creates a fresh error with a given message and an empty source."
-                = fun msg => 'Error { message = msg, source = [  ], },
-              source_to_string
-                : {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-                -> String
-                | doc "Renders an error source location as a string."
-                = fun
-                    { source, .. }
-                    =>
-                    std.array.fold_left
-                      (fun
-                        acc
-                        =>
-                        match {
-                          '"Array"
-                          index =>
-                            "%{acc}[%{std.string.from_number index}]",
-                          'Field
-                          field =>
-                            "%{acc}.%{field}",
-                        }) "" source,
-              to_validator_result
-                | doc m%"
-                  Converts a json-schema-to-nickel result type to the error type expected
-                  from validators in the Nickel stdlib.
-                "%
-                = match {
-                    'Ok =>
-                      'Ok,
-                    'Error
-                    error =>
-                      ('Error
-                        { message = error_to_string error, notes = [  ], })
-                      | _,
-                  },
-            }
-            in
-          {
-              additionalItems
-                : (Dyn
-                  -> [|
-                    'Ok,
-                    'Error {
-                      message : String,
-                      source : Array [| '"Array" Number, 'Field String |]
-                    }
-                  |])
-                -> Number
-                -> Dyn
-                -> [|
-                  'Ok,
-                  'Error {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-                |]
-                | doc "Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.4.2]"
-                = fun
-                    pred
-                    start
-                    x
-                    =>
-                    if !(std.is_array x) then
+                    (match {
                       'Ok
-                    else
-                      let x
-                        | Array Dyn
-                        = x
-                        in
-                      let value_length
-                          = std.array.length x
-                          in
-                        if start >= value_length then
-                            'Ok
-                          else
-                            arrayOf pred
-                              ((std.array.slice start value_length x)
-                              | Dyn),
-              arrayOf
-                : (Dyn
-                  -> [|
-                    'Ok,
-                    'Error {
-                      message : String,
-                      source : Array [| '"Array" Number, 'Field String |]
-                    }
-                  |])
-                -> Dyn
-                -> [|
-                  'Ok,
-                  'Error {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-                |]
-                | doc m%"
-                  Apply a predicate to all elements of an array, succeeding if all
-                  applications succeed.
-                "%
-                = fun
-                    pred
-                    x
-                    =>
-                    if !(std.is_array x) then
-                      'Ok
-                    else
-                      let x
-                        | Array Dyn
-                        = x
-                        in
-                      std.array.fold_right
-                          (fun
-                            { index, value, }
-                            acc
-                            =>
-                            (match { 'Ok => acc, error @ 'Error msg => error, })
-                              (error_lib.at_index index (pred value))) 'Ok
-                          (std.array.map_with_index
-                            (fun idx elt => { index = idx, value = elt, }) x),
-              contains
-                : (Dyn
-                  -> [|
-                    'Ok,
-                    'Error {
-                      message : String,
-                      source : Array [| '"Array" Number, 'Field String |]
-                    }
-                  |])
-                -> Dyn
-                -> [|
-                  'Ok,
-                  'Error {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-                |]
-                | doc "Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.4.6]"
-                = fun
-                    pred
-                    x
-                    =>
-                    if !(std.is_array x) then
-                      'Ok
-                    else
-                      let x
-                        | Array Dyn
-                        = x
-                        in
-                      (match {
-                          'Ok =>
-                            'Ok,
-                          'Errors
-                          errors =>
-                            'Error
-                              (error_lib.combine "contains: no elements matched"
-                                errors),
+                      val =>
+                        (match {
+                          'Count
+                          0 =>
+                            'Ok val,
+                          'Count
+                          n =>
+                            'Count (n + 1),
+                          'Ok
+                          _ =>
+                            'Count 2,
                         })
-                          (std.array.fold_right
-                            (fun
-                              x
-                              acc
-                              =>
-                              (match {
-                                'Ok =>
-                                  'Ok,
-                                'Errors
-                                errors =>
-                                  (match {
-                                    'Ok =>
-                                      'Ok,
-                                    'Error
-                                    error =>
-                                      'Errors (std.array.prepend error errors),
-                                  }) (pred x),
-                              }) acc) ('Errors [  ]) x),
-              items
-                : Array (
-                    Dyn
-                    -> [|
-                      'Ok,
-                      'Error {
-                        message : String,
-                        source : Array [| '"Array" Number, 'Field String |]
-                      }
-                    |]
-                  )
-                -> Dyn
-                -> [|
-                  'Ok,
-                  'Error {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-                |]
-                | doc "Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.4.1]"
-                = fun
-                    preds
-                    x
-                    =>
-                    if !(std.is_array x) then
-                      'Ok
-                    else
-                      let x
-                        | Array Dyn
-                        = x
-                        in
-                      let length_to_check
-                          = std.number.min (std.array.length preds)
-                            (std.array.length x)
-                          in
-                        std.array.fold_right
-                            (fun
-                              i
-                              acc
-                              =>
-                              (match { 'Ok => acc, err @ 'Error msg => err, })
-                                (error_lib.at_index i
-                                  (std.array.at i preds (std.array.at i x))))
-                            'Ok (std.array.range 0 length_to_check),
-              maxItems
-                : Number
-                -> Dyn
-                -> [|
-                  'Ok,
-                  'Error {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-                |]
-                | doc m%"
-                  `maxItems n x` fails if `x` is an array of length strictly greater than `n` and succeeds otherwise.
-                  Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.4.3]
-                "%
-                = fun
-                    n
-                    x
-                    =>
-                    if !(std.is_array x) then
-                      'Ok
-                    else
-                      if (std.array.length (x | Array Dyn)) > n then
-                        error_lib.mk_error
-                          "array is longer than %{std.string.from_number
-                            n} items"
-                      else
-                        'Ok,
-              minItems
-                : Number
-                -> Dyn
-                -> [|
-                  'Ok,
-                  'Error {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-                |]
-                | doc m%"
-                  `minItems n x` fails if `x` is an array of length strictly smaller than `n` and succeeds otherwise.
-                  Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.4.4]
-                "%
-                = fun
-                    n
-                    x
-                    =>
-                    if !(std.is_array x) then
-                      'Ok
-                    else
-                      if (std.array.length (x | Array Dyn)) < n then
-                        error_lib.mk_error
-                          "array is shorter than %{std.string.from_number
-                            n} items"
-                      else
-                        'Ok,
-              uniqueItems
-                : Dyn
-                -> [|
-                  'Ok,
-                  'Error {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-                |]
-                | doc m%"
-                  Succeeds for any array if its elements are pairwise distinct.
-                  Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.4.5]
-                "%
-                = let find_duplicate
-                    : Array Dyn
-                    -> {
-                      has_duplicate : Bool,
-                      duplicate : Dyn,
-                      seen : { _ : Bool }
-                    }
-                    = std.array.fold_right
-                      (fun
-                        elt
-                        acc
-                        =>
-                        if acc.has_duplicate then
-                          acc
-                        else
-                          let index
-                            = std.serialize 'Json elt
-                            in
-                          if std.record.has_field index acc.seen then
-                              {
-                                duplicate = elt,
-                                has_duplicate = true,
-                                seen = acc.seen,
-                              }
-                            else
-                              {
-                                duplicate = null,
-                                has_duplicate = false,
-                                seen = std.record.insert index true acc.seen,
-                              })
-                      { duplicate = null, has_duplicate = false, seen = {}, }
-                    in
-                  fun
-                      x
-                      =>
-                      if !(std.is_array x) then
-                        'Ok
-                      else
-                        let { has_duplicate, duplicate, .. }
-                          = find_duplicate (x | Array Dyn)
-                          in
-                        if has_duplicate then
-                            error_lib.mk_error
-                              "duplicate found: %{std.serialize 'Json
-                                duplicate}"
-                          else
-                            'Ok,
-            },
-      const
-        : Dyn
-        -> Dyn
-        -> [|
-          'Ok,
-          'Error {
-            message : String,
-            source : Array [| '"Array" Number, 'Field String |]
-          }
-        |]
-        | doc m%"
-          `const value x` succeeds if and only if `x` is equal to `value`
-          Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.1.3]
-        "%
-        = fun
-            value
-            x
-            =>
-            if x == value then
-              'Ok
-            else
-              error_lib.mk_error "expected %{std.serialize 'Json value}",
-      contract_from_predicate
-        : (Dyn
-          -> [|
-            'Ok,
-            'Error {
-              message : String,
-              source : Array [| '"Array" Number, 'Field String |]
-            }
-          |])
-        -> Dyn
-        = fun
-            predicate
-            =>
-            std.contract.from_validator
-              (fun value => error_lib.to_validator_result (predicate value)),
-      enum
-        : Array Dyn
-        -> Dyn
-        -> [|
-          'Ok,
-          'Error {
-            message : String,
-            source : Array [| '"Array" Number, 'Field String |]
-          }
-        |]
-        | doc m%"
-          `enum values x` succeeds if and only if `x` is equal to one of the elements of `values`.
-          Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.1.2]
-        "%
-        = let checkEqual
+                          acc,
+                      'Error
+                      e =>
+                        acc,
+                    })
+                      (std.contract.check ctr label value))
+                  ('Count 0)
+                  contracts)),
+    array =
+      {
+          ArrayOf
+            | Dyn -> Dyn
+            | doc m%"
+              An eager version of `Array`. `value | ArrayOf C` will succeed if `value` is an array and all of
+              its elements satisfy the eager part of the contract `C`.
+              
+              # Examples
+              
+              ```nickel multiline
+              [1, 2, 3] | ArrayOf Number
+              # => [1, 2, 3]
+              
+              [1, 2, 3] | ArrayOf String
+              # => error
+              
+              ["a", "b", "c"] | ArrayOf std.enum.TagOrString
+              # => ['a, 'b, 'c]
+              ```
+            "%
             = fun
-              input
-              variant
-              =>
-              (input == variant)
-              || ((std.is_enum input)
-              && (((std.string.from_enum input) == variant)
-              | Bool))
-            in
-          fun
-              values
-              x
-              =>
-              std.array.fold_right
-                (fun value acc => if checkEqual x value then 'Ok else acc)
-                (error_lib.mk_error
-                  "expected one of %{std.serialize 'Json (values | Dyn)}")
-                values,
-      from_simple_predicate
-        : String
-        -> (Dyn -> Bool)
-        -> Dyn
-        -> [|
-          'Ok,
-          'Error {
-            message : String,
-            source : Array [| '"Array" Number, 'Field String |]
-          }
-        |]
-        | doc "Convert a simple boolean predicate into a predicate supporting error messages"
-        = fun msg pred x => if pred x then 'Ok else error_lib.mk_error msg,
-      ifThenElse
-        : (Dyn
-          -> [|
-            'Ok,
-            'Error {
-              message : String,
-              source : Array [| '"Array" Number, 'Field String |]
-            }
-          |])
-        -> (Dyn
-          -> [|
-            'Ok,
-            'Error {
-              message : String,
-              source : Array [| '"Array" Number, 'Field String |]
-            }
-          |])
-        -> (Dyn
-          -> [|
-            'Ok,
-            'Error {
-              message : String,
-              source : Array [| '"Array" Number, 'Field String |]
-            }
-          |])
-        -> Dyn
-        -> [|
-          'Ok,
-          'Error {
-            message : String,
-            source : Array [| '"Array" Number, 'Field String |]
-          }
-        |]
-        | doc m%"
-          `ifThenElse i t e` first checks if the predicate `i` succeeds. If it does, it's equivalent to `t`, otherwise it's equivalent to `e`.
-          Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.6]
-        "%
-        = fun
-            cond
-            ok
-            err
-            x
-            =>
-            (match { 'Ok => ok x, 'Error _ => err x, }) (cond x),
-      isType
-        : [|
-            '"Array",
-            '"Bool",
-            'Integer,
-            'Null,
-            '"Number",
-            'Record,
-            '"String"
-          |]
-        -> Dyn
-        -> [|
-          'Ok,
-          'Error {
-            message : String,
-            source : Array [| '"Array" Number, 'Field String |]
-          }
-        |]
-        = fun
-            t
-            =>
-            (match {
-              'Null =>
-                from_simple_predicate "expected `null`" (fun x => x == null),
-              'Integer =>
-                from_simple_predicate "expected an integer"
+                ctr
+                =>
+                std.contract.custom
+                  (fun
+                    label
+                    value
+                    =>
+                    if !(std.is_array value) then
+                      'Error { message = "expected an array" }
+                    else
+                      std.array.try_fold_left
+                        (fun
+                          acc
+                          elt
+                          =>
+                          (match {
+                            'Ok
+                            v =>
+                              'Ok (acc @ [ v ]),
+                            'Error
+                            e =>
+                              'Error e,
+                          })
+                            (std.contract.check ctr label elt))
+                        [  ]
+                        value),
+          Contains
+            | Dyn -> Dyn
+            | doc m%"
+              A contract checking that an array contains something satisfying another contract.
+              
+              For example, `Contains Number` is a contract checking that the value is an array
+              and that it contains at least one number.
+              
+              This is an eager contract, and it assumes that the inputs are also eager.
+              Any lazy parts of the inputs will be ignored.
+              
+              # Examples
+              
+              ```nickel multiline
+              ["hi", true, 1] | Contains Bool
+              # => ["hi", true, 1]
+              
+              ["hi", true, 1] | Contains (Array Bool)
+              # => error
+              
+              # Lazy parts of the inner contract are ignored: "hi" does not get transformed
+              # to 'hi.
+              ["hi", true, 1] | Contains std.enum.TagOrString
+              # => ["hi", true, 1]
+              ```
+            "%
+            = fun
+                contract
+                =>
+                std.contract.custom
+                  (fun
+                    label
+                    value
+                    =>
+                    if !(std.is_array value) then
+                      'Error { message = "expected an array" }
+                    else
+                      let good_elt
+                        = fun
+                          elt
+                          =>
+                          (match { 'Ok _ => true, 'Error _ => false, })
+                            (std.contract.check contract label elt)
+                        in
+                      if std.array.any good_elt value then
+                          'Ok value
+                        else
+                          'Error { message = "no elements matched" }),
+          Items
+            | Array Dyn -> Dyn -> Dyn
+            | doc m%"
+              A contract checking that the first few elements of an array satisfy
+              specific contracts, and the remaining elements satisfy another contract.
+              For example, `Items [C1 C2] C3` is a contract checking that the value is
+              an array, that its first two elements (if present) satisfy `C1` and `C2`
+              respectively, and that any other elements satisfy `C3`.
+              
+              # Examples
+              
+              ```nickel multiline
+              [1, 2, "foo", "bar"] | Items [Number, Number] String
+              
+              # The value is allowed to be shorter than the list of contracts.
+              [1] | Items [Number, Number] String
+              
+              [1, "foo", "bar"] | Items [Number, Number] String
+              # => error
+              
+              # Inner contracts are propagated, but note that the overall `Items` contract
+              # is eager if and only if all the contracts you pass in are eager.
+              [1, { foo = "str"}, "foo", "bar"] | Items [Number, { foo | Number }] String
+              # => error
+              ```
+            "%
+            = fun
+                elt_contracts
+                rest
+                =>
+                std.contract.custom
+                  (fun
+                    label
+                    value
+                    =>
+                    if !(std.is_array value) then
+                      'Error { message = "expected an array" }
+                    else
+                      let length_to_check
+                        = std.number.min
+                          (std.array.length elt_contracts)
+                          (std.array.length value)
+                        in
+                      let { left, right, }
+                          = std.array.split_at length_to_check value
+                          in
+                        (match {
+                            'Error
+                            e =>
+                              'Error e,
+                            'Ok
+                            left_with_contracts =>
+                              std.array.try_fold_left
+                                (fun
+                                  acc
+                                  elt
+                                  =>
+                                  (match {
+                                    'Ok
+                                    v =>
+                                      'Ok (acc @ [ v ]),
+                                    'Error
+                                    e =>
+                                      'Error e,
+                                  })
+                                    (std.contract.check rest label elt))
+                                left_with_contracts
+                                right,
+                          })
+                            (std.array.try_fold_left
+                              (fun
+                                acc
+                                =>
+                                match {
+                                  'Ok
+                                  v =>
+                                    'Ok (acc @ [ v ]),
+                                  'Error
+                                  e =>
+                                    'Error e,
+                                })
+                              [  ]
+                              (std.array.zip_with
+                                (fun
+                                  contract
+                                  elt
+                                  =>
+                                  std.contract.check contract label elt)
+                                elt_contracts
+                                left))),
+          MaxItems
+            : Number -> Dyn
+            | doc m%"
+              A contract that checks whether an array has at most a certain number of items.
+              
+              # Examples
+              
+              ```nickel multiline
+              [1, 2, 3] | MaxItems 3
+              
+              [1, 2, 3] | MaxItems 2
+              # => error
+            "%
+            = fun
+                n
+                =>
+                std.contract.from_predicate
+                  (fun
+                    arr
+                    =>
+                    (std.is_array arr)
+                    && ((std.array.length (arr | Array Dyn)) <= n)),
+          MinItems
+            : Number -> Dyn
+            | doc m%"
+              A contract that checks whether an array has at least a certain number of items.
+              
+              # Examples
+              
+              ```nickel multiline
+              [1, 2, 3] | MinItems 3
+              
+              [1, 2, 3] | MinItems 4
+              # => error
+              ```
+            "%
+            = fun
+                n
+                =>
+                std.contract.from_predicate
+                  (fun
+                    arr
+                    =>
+                    (std.is_array arr)
+                    && ((std.array.length (arr | Array Dyn)) >= n)),
+          UniqueItems
+            | doc m%"
+              Checks that the elements of an array are pairwise distinct.
+              
+              # Examples
+              
+              ```nickel multiline
+              [1, 2, "3"] | UniqueItems
+              
+              [1, 3, 2, 3] | UniqueItems
+              # => error: duplicate found: 3
+              ```
+            "%
+            = let find_duplicate
+                : Array Dyn
+                -> {
+                  has_duplicate : Bool,
+                  duplicate : Dyn,
+                  seen : { _ : Bool }
+                }
+                = std.array.fold_right
+                  (fun
+                    elt
+                    acc
+                    =>
+                    if acc.has_duplicate then
+                      acc
+                    else
+                      let index = std.serialize 'Json elt in
+                      if std.record.has_field index acc.seen then
+                          {
+                            duplicate = elt,
+                            has_duplicate = true,
+                            seen = acc.seen
+                          }
+                        else
+                          {
+                            duplicate = null,
+                            has_duplicate = false,
+                            seen = std.record.insert index true acc.seen
+                          })
+                  { duplicate = null, has_duplicate = false, seen = {} }
+                in
+              std.contract.from_validator
                   (fun
                     x
                     =>
-                    (std.is_number x) && (std.number.is_integer (x | Number))),
-              _ =>
-                from_simple_predicate
-                  "value is not of type %{std.string.from_enum t}"
-                  (fun x => (std.typeof x) == t),
-            }) t,
-      never
-        : Dyn
-        -> [|
-          'Ok,
-          'Error {
-            message : String,
-            source : Array [| '"Array" Number, 'Field String |]
-          }
-        |]
-        = std.function.const (error_lib.mk_error "never"),
-      not
-        : (Dyn
-          -> [|
-            'Ok,
-            'Error {
-              message : String,
-              source : Array [| '"Array" Number, 'Field String |]
-            }
-          |])
-        -> Dyn
-        -> [|
-          'Ok,
-          'Error {
-            message : String,
-            source : Array [| '"Array" Number, 'Field String |]
-          }
-        |]
-        | doc m%"
-          `not pred` succeeds if and only if `pred` fails
-          Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.7.4]
-        "%
-        = fun
+                    if !(std.is_array x) then
+                      'Error { message = "expected an array" }
+                    else
+                      let { has_duplicate, duplicate, .. } = find_duplicate x in
+                      if has_duplicate then
+                          'Error
+                            {
+                              message =
+                                "duplicate found: %{std.serialize
+                                    'Json
+                                    duplicate}"
+                            }
+                        else
+                          'Ok)
+        },
+    number =
+      let from_predicate
+          | (Number -> Bool) -> String -> Dyn
+          = fun
             pred
-            x
+            msg
             =>
-            (match {
-              'Ok =>
-                error_lib.mk_error "Inverted predicate succeeded unexpectedly",
-              'Error
-              _ =>
-                'Ok,
-            }) (pred x),
-      numbers =
-        {
-            exclusiveMaximum
-              : Number
-              -> Dyn
-              -> [|
-                'Ok,
-                'Error {
-                  message : String,
-                  source : Array [| '"Array" Number, 'Field String |]
-                }
-              |]
-              | doc "Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.2.3]"
-              = fun
-                  limit
-                  x
-                  =>
-                  if !(std.is_number x) then
-                    'Ok
-                  else
-                    if (x | Number) < limit then
-                      'Ok
-                    else
-                      'Error
-                        {
-                          message =
-                            "expected an exclusive maximum of %{std.string.from_number
-                                limit}",
-                          source = [  ],
-                        },
-            exclusiveMinimum
-              : Number
-              -> Dyn
-              -> [|
-                'Ok,
-                'Error {
-                  message : String,
-                  source : Array [| '"Array" Number, 'Field String |]
-                }
-              |]
-              | doc "Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.2.5]"
-              = fun
-                  limit
-                  x
-                  =>
-                  if !(std.is_number x) then
-                    'Ok
-                  else
-                    if (x | Number) > limit then
-                      'Ok
-                    else
-                      'Error
-                        {
-                          message =
-                            "expected an exclusive minimum of %{std.string.from_number
-                                limit}",
-                          source = [  ],
-                        },
-            maximum
-              : Number
-              -> Dyn
-              -> [|
-                'Ok,
-                'Error {
-                  message : String,
-                  source : Array [| '"Array" Number, 'Field String |]
-                }
-              |]
-              | doc "Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.2.2]"
-              = fun
-                  limit
-                  x
-                  =>
-                  if !(std.is_number x) then
-                    'Ok
-                  else
-                    if (x | Number) <= limit then
-                      'Ok
-                    else
-                      'Error
-                        {
-                          message =
-                            "expected a maximum of %{std.string.from_number
-                                limit}",
-                          source = [  ],
-                        },
-            minimum
-              : Number
-              -> Dyn
-              -> [|
-                'Ok,
-                'Error {
-                  message : String,
-                  source : Array [| '"Array" Number, 'Field String |]
-                }
-              |]
-              | doc "Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.2.4]"
-              = fun
-                  limit
-                  x
-                  =>
-                  if !(std.is_number x) then
-                    'Ok
-                  else
-                    if (x | Number) >= limit then
-                      'Ok
-                    else
-                      'Error
-                        {
-                          message =
-                            "expected a minimum of %{std.string.from_number
-                                limit}",
-                          source = [  ],
-                        },
-            multipleOf
-              : Number
-              -> Dyn
-              -> [|
-                'Ok,
-                'Error {
-                  message : String,
-                  source : Array [| '"Array" Number, 'Field String |]
-                }
-              |]
-              | doc "Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.2.1]"
-              = fun
-                  mult
-                  x
-                  =>
-                  if !(std.is_number x) then
-                    'Ok
-                  else
-                    if std.number.is_integer ((x | Number) / mult) then
-                      'Ok
-                    else
-                      'Error
-                        {
-                          message =
-                            "expected a multiple of %{std.string.from_number
-                                mult}",
-                          source = [  ],
-                        },
-          },
-      oneOf
-        : Array (
-            Dyn
-            -> [|
-              'Ok,
-              'Error {
-                message : String,
-                source : Array [| '"Array" Number, 'Field String |]
-              }
-            |]
-          )
-        -> Dyn
-        -> [|
-          'Ok,
-          'Error {
-            message : String,
-            source : Array [| '"Array" Number, 'Field String |]
-          }
-        |]
-        | doc m%"
-          `oneOf preds` succeeds if precisely one of the predicates in `preds` succeeds
-          Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.7.3]
-        "%
-        = fun
-            preds
-            x
-            =>
-            let count_ok
-              : Array
-                  [|
-                    'Ok,
-                    'Error {
-                      message : String,
-                      source : Array [| '"Array" Number, 'Field String |]
-                    }
-                  |]
-              -> Number
-              = fun
-                results
+            std.contract.from_validator
+              (fun
+                value
                 =>
-                std.array.fold_left (fun n b => if b == 'Ok then n + 1 else n) 0
-                  results
-              in
-            let results
-                = std.array.map (fun pred => pred x) preds
-                in
-              let count
-                  = count_ok results
-                  in
-                if count == 0 then
-                    let errors
-                      = std.array.flat_map
-                        (match { 'Ok => [  ], 'Error error => [ error ], })
-                        results
-                      in
-                    'Error
-                        (error_lib.combine "oneOf: none of the options matched"
-                          errors)
+                if !(std.is_number value) then
+                  'Error { message = "expected a number" }
+                else
+                  if pred (value | Number) then
+                    'Ok
                   else
-                    if count > 1 then
-                      error_lib.mk_error
-                        "oneOf: more than one of the options matched"
-                    else
-                      'Ok,
-      records =
-        let error_lib
-            : {
-              at_field : String
-              -> [|
-                  'Ok,
-                  'Error {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-                |]
-              -> [|
-                'Ok,
-                'Error {
-                  message : String,
-                  source : Array [| '"Array" Number, 'Field String |]
-                }
-              |],
-              at_index : Number
-              -> [|
-                  'Ok,
-                  'Error {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-                |]
-              -> [|
-                'Ok,
-                'Error {
-                  message : String,
-                  source : Array [| '"Array" Number, 'Field String |]
-                }
-              |],
-              combine : String
-              -> Array
-                  {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-              -> {
-                message : String,
-                source : Array [| '"Array" Number, 'Field String |]
-              },
-              error_to_string : {
-                  message : String,
-                  source : Array [| '"Array" Number, 'Field String |]
-                }
-              -> String,
-              to_validator_result : [|
-                  'Ok,
-                  'Error {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-                |]
-              -> [|
-                'Ok,
-                'Error {
-                  message | String | optional,
-                  notes | Array String | optional,
-                }
-              |],
-              source_to_string : {
-                  message : String,
-                  source : Array [| '"Array" Number, 'Field String |]
-                }
-              -> String,
-              mk_error : String
-              -> [|
-                'Ok,
-                'Error {
-                  message : String,
-                  source : Array [| '"Array" Number, 'Field String |]
-                }
-              |]
-            }
-            = {
-              at_field
-                | doc m%"
-                  Prepend a given field name to the error source of this result, if it is an
-                  `'Error`. Returns the result unchanged if it is an `'Ok`.
-                "%
-                = fun
-                    field
-                    =>
-                    match {
-                      'Ok =>
-                        'Ok,
-                      'Error
-                      error =>
-                        'Error
-                          {
-                            message = error.message,
-                            source =
-                              std.array.prepend ('Field field) error.source,
-                          },
-                    },
-              at_index
-                | doc m%"
-                  Prepend an array access at the specificed index to the error source of
-                  this result, if it is an `'Error`. Returns the result unchanged if it is
-                  an `'Ok`.
-                "%
-                = fun
-                    index
-                    =>
-                    match {
-                      'Ok =>
-                        'Ok,
-                      'Error
-                      error =>
-                        'Error
-                          {
-                            message = error.message,
-                            source =
-                              std.array.prepend ('"Array" index) error.source,
-                          },
-                    },
-              combine
-                | doc m%"
-                  Combines an array of errors into a single error with a given initial message.
-                  Each error message will be listed after the initial message together
-                  with their source rendered as a path.
-                "%
-                = fun
-                    init_msg
-                    errors
-                    =>
-                    let msgs
-                      = std.string.join
-                        m%"
-                          
-                          
-                        "%
-                        (std.array.map
-                          (fun error => " • %{error_to_string error}") errors)
-                      in
-                    {
-                        message =
-                          m%"
-                              %{init_msg}
-                              %{msgs}
-                            "%,
-                        source = [  ],
-                      },
-              error_to_string
-                | doc "Converts an error to a string representation, including the source."
-                = fun
-                    error
-                    =>
-                    let location
-                      = if error.source == [  ] then
-                        ""
-                      else
-                        "at %{source_to_string error}: "
-                      in
-                    "%{location}%{error.message}",
-              mk_error
-                | doc "Creates a fresh error with a given message and an empty source."
-                = fun msg => 'Error { message = msg, source = [  ], },
-              source_to_string
-                : {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-                -> String
-                | doc "Renders an error source location as a string."
-                = fun
-                    { source, .. }
-                    =>
-                    std.array.fold_left
-                      (fun
-                        acc
-                        =>
-                        match {
-                          '"Array"
-                          index =>
-                            "%{acc}[%{std.string.from_number index}]",
-                          'Field
-                          field =>
-                            "%{acc}.%{field}",
-                        }) "" source,
-              to_validator_result
-                | doc m%"
-                  Converts a json-schema-to-nickel result type to the error type expected
-                  from validators in the Nickel stdlib.
-                "%
-                = match {
-                    'Ok =>
-                      'Ok,
-                    'Error
-                    error =>
-                      ('Error
-                        { message = error_to_string error, notes = [  ], })
-                      | _,
-                  },
-            }
-            in
-          {
-              dependencies
-                : { _ : Dyn }
-                -> Dyn
-                -> [|
-                  'Ok,
-                  'Error {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-                |]
-                | doc "Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.5.7]"
-                = let mustHaveFields
-                    : Array String
-                    -> { _ : Dyn }
-                    -> [|
-                      'Ok,
-                      'Error {
-                        message : String,
-                        source : Array [| '"Array" Number, 'Field String |]
-                      }
-                    |]
-                    = fun
-                      fields
-                      x
+                    'Error { message = msg })
+          in
+        {
+            ExclusiveMaximum
+              | Number -> Dyn
+              | doc m%"
+                `ExclusiveMaximum n` is a contract checking that a number is at strictly less than `n`.
+                
+                # Examples
+                
+                ```nickel multiline
+                5 | ExclusiveMaximum 5.1
+                
+                5 | ExclusiveMaximum 5
+                # => error: expected an exclusive maximum of 5
+                
+                "5" | ExclusiveMaximum 5
+                # => error: expected a number
+                ```
+              "%
+              = fun
+                  limit
+                  =>
+                  from_predicate
+                    (fun x => x < limit)
+                    "expected an exclusive maximum of %{std.string.from_number
+                      limit}",
+            ExclusiveMinimum
+              | Number -> Dyn
+              | doc m%"
+                `ExclusiveMinimum n` is a contract checking that a number is at strictly more than `n`.
+                
+                # Examples
+                
+                ```nickel multiline
+                5 | ExclusiveMinimum 4.9
+                
+                5 | ExclusiveMinimum 5
+                # => error: expected an exclusive minimum of 5
+                
+                "5" | ExclusiveMinimum 5
+                # => error: expected a number
+                ```
+              "%
+              = fun
+                  limit
+                  =>
+                  from_predicate
+                    (fun x => x > limit)
+                    "expected an exclusive minimum of %{std.string.from_number
+                      limit}",
+            Maximum
+              | Number -> Dyn
+              | doc m%"
+                `Maximum n` is a contract checking that a number is at most `n`.
+                
+                # Examples
+                
+                ```nickel multiline
+                5 | Maximum 5
+                
+                5 | Maximum 4
+                # => error: expected a maximum of 4
+                
+                "5" | Maximum 5
+                # => error: expected a number
+                ```
+              "%
+              = fun
+                  limit
+                  =>
+                  from_predicate
+                    (fun x => x <= limit)
+                    "expected a maximum of %{std.string.from_number limit}",
+            Minimum
+              | Number -> Dyn
+              | doc m%"
+                `Minimum n` is a contract checking that a number is at least `n`.
+                
+                # Examples
+                
+                ```nickel multiline
+                5 | Minimum 5
+                
+                5 | Minimum 6
+                # => error: expected a minimum of 6
+                
+                "5" | Minimum 6
+                # => error: expected a number
+                ```
+              "%
+              = fun
+                  limit
+                  =>
+                  from_predicate
+                    (fun x => x >= limit)
+                    "expected a minimum of %{std.string.from_number limit}",
+            MultipleOf
+              | Number -> Dyn
+              | doc m%"
+                `MultipleOf n` is a contract checking whether a value is a multiple of `n`.
+                
+                # Examples
+                
+                ```nickel multiline
+                4 | MultipleOf 2
+                
+                "4" | MultipleOf 2
+                # => error: expected a number
+                
+                4 | MultipleOf 3
+                # => error: expected a multiple of 3
+                
+                4 | MultipleOf 0
+                # => error: expected a multiple of 0
+                ```
+              "%
+              = fun
+                  n
+                  =>
+                  std.contract.from_validator
+                    (fun
+                      value
                       =>
-                      std.array.fold_right
-                        (fun
-                          field
-                          acc
-                          =>
-                          if !(std.record.has_field field x) then
-                            error_lib.mk_error "expected field `%{field}`"
+                      if !(std.is_number value) then
+                        'Error { message = "expected a number" }
+                      else
+                        if n == 0 then
+                          'Error { message = "expected a multiple of 0" }
+                        else
+                          if std.number.is_integer (value / n) then
+                            'Ok
                           else
-                            acc) 'Ok fields
-                    in
-                  fun
-                      deps
-                      x
+                            'Error
+                              {
+                                message =
+                                  "expected a multiple of %{std.string.from_number
+                                      n}"
+                              })
+          },
+    record =
+      let ErrData
+          = {
+            blame_location | Dyn | optional,
+            message | String | optional,
+            notes | Array String | optional
+          }
+          in
+        {
+            DependentContracts
+              | { _ | Dyn } -> Dyn
+              | doc m%"
+                A contract for asserting that if some fields are present then the entire
+                record satisfies a contract.
+                
+                Specifically, `DependentContracts { foo = C }` is a contract asserting that
+                the value is a record, and if the value contains a field named `foo` then
+                the entire record satisfies the contract `C`.
+                
+                `DependentContracts` calls `std.contract.check` for each of the provided
+                contracts. In particular, if `C` is fully eager then so is
+                `DependentContracts { foo = C }`.
+                
+                # Examples
+                
+                ```nickel multiline
+                { foo = 1, bar = 2 } | DependentContracts { foo = { bar | Number, .. } }
+                
+                { foo = 1, bar = 2 } | DependentContracts { foo = { bar | Number } }
+                # => error: extra field `foo`
+                
+                # This one doesn't fail: the inner contract never gets triggered because there's no `baz` field
+                { foo = 1, bar = 2 } | DependentContracts { baz = { bar | Number } }
+                
+                1 | DependentContracts { baz = { bar | Number } }
+                # => error: expected a record
+                ```
+              "%
+              = fun
+                  deps
+                  =>
+                  std.contract.custom
+                    (fun
+                      label
+                      value
                       =>
-                      if !(std.is_record x) then
-                        'Ok
+                      if !(std.is_record value) then
+                        'Error { message = "expected a record" }
                       else
-                        let x
-                          | { _ : Dyn }
-                          = x
+                        std.array.try_fold_left
+                          (fun
+                            acc
+                            { field, value = contract, }
+                            =>
+                            if std.record.has_field field value then
+                              std.contract.check contract label acc
+                            else
+                              'Ok acc)
+                          value
+                          (std.record.to_array deps)),
+            DependentFields
+              | { _ | Array String } -> Dyn
+              | doc m%"
+                A contract for asserting that if some fields are present, other fields are
+                also present.
+                
+                Specifically, `DependentFields { foo = ["bar", "baz"] }` is a contract
+                asserting that if the field `foo` is present then the fields `bar` and
+                `baz` are also present. This corresponds to the part of JSON schema's
+                [dependencies](https://json-schema.org/draft-07/draft-handrews-json-schema-validation-01#rfc.section.6.5.7)
+                keyword in which the values are arrays.
+                
+                This is an eager contract.
+                
+                ```nickel multiline
+                { foo = 1, bar = 2 } | DependentFields { foo = ["bar"] }
+                
+                { foo = 1, baz = 2 } | DependentFields { foo = ["bar"] }
+                # => error: expected field bar
+                
+                { baz = 2 } | DependentFields { foo = ["bar"] }
+                ```
+              "%
+              = fun
+                  dependencies
+                  =>
+                  std.contract.from_validator
+                    (fun
+                      value
+                      =>
+                      if !(std.is_record value) then
+                        'Error { message = "expected a record" }
+                      else
+                        let must_have_fields
+                          : Array String
+                          -> { _ : Dyn } -> [| 'Ok, 'Error ErrData |]
+                          = fun
+                            fields
+                            x
+                            =>
+                            std.array.fold_right
+                              (fun
+                                field
+                                acc
+                                =>
+                                if !(std.record.has_field field x) then
+                                  'Error
+                                    ({ message = "expected field %{field}" }
+                                    | ErrData)
+                                else
+                                  acc)
+                              'Ok
+                              fields
                           in
                         std.array.fold_right
                             (fun
-                              { field, value, }
+                              { field, value = dependent_fields, }
                               acc
                               =>
-                              if !(std.record.has_field field x) then
-                                acc
-                              else
-                                let result
-                                  = if std.is_array value then
-                                    mustHaveFields (value | Array String) x
-                                  else
-                                    let pred
-                                      | Dyn
-                                      -> [|
-                                        'Ok,
-                                        'Error {
-                                          message : String,
-                                          source : Array
-                                            [| '"Array" Number, 'Field String |]
-                                        }
-                                      |]
-                                      = value
-                                      in
-                                    pred (x | Dyn)
-                                  in
-                                (match {
-                                    'Ok =>
-                                      acc,
-                                    'Error
-                                    error =>
-                                      'Error
-                                        {
-                                          message =
-                                            "dependency of `%{field}` failed: %{error.message}",
-                                          source =
-                                            std.array.prepend ('Field field)
-                                                error.source,
-                                        },
-                                  }) result) 'Ok (std.record.to_array deps),
-              maxProperties
-                : Number
-                -> Dyn
-                -> [|
-                  'Ok,
-                  'Error {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-                |]
-                | doc m%"
-                  `maxProperties n x` fails if `x` is a record containing stricly more than `n` fields.
-                  Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.5.1]
-                "%
-                = fun
-                    n
-                    x
-                    =>
-                    if !(std.is_record x) then
-                      'Ok
-                    else
-                      if (std.record.length (x | { _ : Dyn })) > n then
-                        error_lib.mk_error
-                          "record contains more than %{std.string.from_number
-                            n} fields"
-                      else
-                        'Ok,
-              minProperties
-                : Number
-                -> Dyn
-                -> [|
-                  'Ok,
-                  'Error {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-                |]
-                | doc m%"
-                  `minProperties n x` fails if `x` is a record containing stricly less than `n` fields.
-                  Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.5.1]
-                "%
-                = fun
-                    n
-                    x
-                    =>
-                    if !(std.is_record x) then
-                      'Ok
-                    else
-                      if (std.record.length (x | { _ : Dyn })) < n then
-                        error_lib.mk_error
-                          "record contains fewer than %{std.string.from_number
-                            n} fields"
-                      else
-                        'Ok,
-              propertyNames
-                : (Dyn
-                  -> [|
-                    'Ok,
-                    'Error {
-                      message : String,
-                      source : Array [| '"Array" Number, 'Field String |]
-                    }
-                  |])
-                -> Dyn
-                -> [|
-                  'Ok,
-                  'Error {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-                |]
-                | doc "Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.5.8]"
-                = fun
-                    pred
-                    x
-                    =>
-                    if !(std.is_record x) then
-                      'Ok
-                    else
-                      std.array.fold_right
-                        (fun
-                          field
-                          acc
-                          =>
-                          (match {
-                            'Error
-                            error =>
-                              'Error
-                                {
-                                  message =
-                                    "field `%{field}` did not validate against `propertyNames` schema: %{error.message}",
-                                  source =
-                                    std.array.prepend ('Field field)
-                                        error.source,
-                                },
-                            'Ok =>
-                              acc,
-                          }) (pred (field | Dyn))) 'Ok
-                        (std.record.fields (x | { _ : Dyn })),
-              record
-                : {
-                    _ : Dyn
-                    -> [|
-                      'Ok,
-                      'Error {
-                        message : String,
-                        source : Array [| '"Array" Number, 'Field String |]
-                      }
-                    |]
-                  }
-                -> {
-                    _ : Dyn
-                    -> [|
-                      'Ok,
-                      'Error {
-                        message : String,
-                        source : Array [| '"Array" Number, 'Field String |]
-                      }
-                    |]
-                  }
-                -> Bool
-                -> (Dyn
-                  -> [|
-                    'Ok,
-                    'Error {
-                      message : String,
-                      source : Array [| '"Array" Number, 'Field String |]
-                    }
-                  |])
-                -> Dyn
-                -> [|
-                  'Ok,
-                  'Error {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-                |]
-                | doc m%"
-                  `record properties patternProperties additionalAllowed
-                  additionalProperties x` is a combination of the `properties`,
-                  `patternProperties` and `additionalProperties` validation keywords in
-                  JSON schema.
-                  
-                  Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.5]
-                "%
-                = fun
-                    properties
-                    patternProperties
-                    additionalAllowed
-                    additionalProperties
-                    x
-                    =>
-                    if !(std.is_record x) then
-                      'Ok
-                    else
-                      let x
-                        | { _ : Dyn }
-                        = x
-                        in
-                      let check_properties
-                          : {
-                            result : [|
-                              'Ok,
-                              'Error {
-                                message : String,
-                                source : Array
-                                  [| '"Array" Number, 'Field String |]
-                              }
-                            |],
-                            checked : { _ : Bool }
-                          }
-                          = std.array.fold_right
-                            (fun
-                              { field, value, }
-                              acc
-                              =>
-                              if !(std.record.has_field field x) then
-                                acc
-                              else
+                              if std.record.has_field field value then
                                 (match {
                                   'Ok =>
-                                    {
-                                      checked =
-                                        std.record.insert field true
-                                            acc.checked,
-                                      result = acc.result,
-                                    },
-                                  error @ 'Error
-                                  _ =>
-                                    { checked = {}, result = error, },
+                                    acc,
+                                  'Error
+                                  e =>
+                                    'Error
+                                      (e
+                                      & {
+                                        notes =
+                                          [
+                                              "because field %{field} was present"
+                                            ]
+                                      }),
                                 })
-                                  (error_lib.at_field field
-                                    (value x."%{field}")))
-                            { checked = {}, result = 'Ok, }
-                            (std.record.to_array properties)
-                          in
-                        let matching_fields
-                            : String -> { _ : Dyn }
-                            = fun
-                              pattern
-                              =>
-                              let matcher
-                                = std.string.is_match pattern
-                                in
-                              std.array.fold_left
-                                  (fun
-                                    acc
-                                    { field, value, }
-                                    =>
-                                    if matcher field then
-                                      std.record.insert field value acc
-                                    else
-                                      acc) {} (std.record.to_array x)
-                            in
-                          let check_pattern_properties
-                              : {
-                                result : [|
-                                  'Ok,
-                                  'Error {
-                                    message : String,
-                                    source : Array
-                                      [| '"Array" Number, 'Field String |]
-                                  }
-                                |],
-                                checked : { _ : Bool }
-                              }
-                              = std.array.fold_right
+                                  (must_have_fields dependent_fields value)
+                              else
+                                acc)
+                            'Ok
+                            (std.record.to_array dependencies)),
+            MaxProperties
+              | Number -> Dyn
+              | doc m%"
+                A contract that checks whether a record has at most a certain number of properties.
+                
+                # Examples
+                
+                ```nickel multiline
+                { foo = 1, bar = 2 } | MaxProperties 2
+                
+                { foo = 1, bar = 2 } | MaxProperties 1
+                # => error: expected a record with at most 1 fields
+                ```
+              "%
+              = fun
+                  n
+                  =>
+                  std.contract.from_validator
+                    (fun
+                      value
+                      =>
+                      if !(std.is_record value) then
+                        'Error { message = "expected a record" }
+                      else
+                        if (std.record.length value) > n then
+                          'Error
+                            {
+                              message =
+                                "expected a record with at most %{std.string.from_number
+                                    n} fields"
+                            }
+                        else
+                          'Ok),
+            MinProperties
+              | Number -> Dyn
+              | doc m%"
+                A contract that checks whether a record has at least a certain number of properties.
+                
+                # Examples
+                
+                ```nickel multiline
+                { foo = 1, bar = 2 } | MinProperties 2
+                
+                { foo = 1, bar = 2 } | MinProperties 3
+                # => error: expected a record with at least 3 fields
+                ```
+              "%
+              = fun
+                  n
+                  =>
+                  std.contract.from_validator
+                    (fun
+                      value
+                      =>
+                      if !(std.is_record value) then
+                        'Error { message = "expected a record" }
+                      else
+                        if (std.record.length value) < n then
+                          'Error
+                            {
+                              message =
+                                "expected a record with at least %{std.string.from_number
+                                    n} fields"
+                            }
+                        else
+                          'Ok),
+            PropertyNames
+              | Dyn -> Dyn
+              | doc m%"
+                `PropertyNames C` is a contract asserting that a value is a record and all of
+                its field names satisfy the contract `C`.
+                
+                `PropertyNames C` is an eager contract for any `C`. Any lazy parts of `C` will
+                be ignored.
+                
+                ```nickel multiline
+                { foo = 1 } | PropertyNames std.string.NonEmpty
+                
+                { "1" = 1 } | PropertyNames std.string.NumberLiteral
+                
+                { foo = 1 } | PropertyNames std.string.NumberLiteral
+                # => error: invalid number literal
+                ```
+              "%
+              = fun
+                  contract
+                  =>
+                  std.contract.custom
+                    (fun
+                      label
+                      value
+                      =>
+                      if !(std.is_record value) then
+                        'Error { message = "expected a record" }
+                      else
+                        std.array.try_fold_left
+                          (fun
+                            acc
+                            field_name
+                            =>
+                            (match {
+                              'Ok
+                              _ =>
+                                'Ok value,
+                              'Error
+                              e =>
+                                'Error e,
+                            })
+                              (std.contract.check contract label field_name))
+                          ('Ok value)
+                          (std.record.fields value)),
+            Record
+              | {
+                  additional | [| 'None, 'Some Dyn |],
+                  patterns | { _ | Dyn },
+                  properties | { _ | Dyn },
+                  required | { _ | Dyn }
+                }
+              -> Dyn
+              | doc m%"
+                A contract for checking JSON Schema object properties.
+                
+                In `Record { properties, required, patterns, additional }`, properties and patterns
+                should be dicts containing contracts as values. These contracts will be
+                applied to the appropriate fields of your record. `additional` can be
+                `None` (in which case fields not matching `properties` or `patterns` are
+                forbidden) or `Some contract` (in which case `contract` will be applied to
+                every field not matched by `properties` and `patterns`).
+                
+                The contract returned by `Record` is sort of eager: it will call
+                `std.contract.check` on the appropriate field values, and then it will
+                propagate any lazy contracts returned by `std.contract.check`. This makes
+                `Record` a little more eager than standard record contracts, and if all
+                the contracts you provide are eager then `Record` will be fully eager.
+                
+                Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.5]
+                
+                # Examples
+                
+                ```nickel multiline
+                { foo = 1 } | Record { properties = { foo = Number }, required = {}, patterns = {}, additional = 'None }
+                # => { foo = 1 }
+                
+                # Properties aren't required to be present.
+                { } | Record { properties = { foo = Number }, required = {}, patterns = {}, additional = 'None }
+                # => { }
+                
+                # Properties aren't required to be present.
+                { } | Record { properties = { foo = Number }, required = { foo = null }, patterns = {}, additional = 'None }
+                # => error
+                
+                # If something in properties also matches a pattern, both contracts are applied.
+                { foo = 1.1 } | Record { properties = { foo = Number }, required = {}, patterns = { "." = std.number.Integer }, additional = 'None }
+                # => error: expected an integer
+                
+                # additional being 'None means that unmatched fields are forbidden
+                { bar = 1 } | Record { properties = { foo = Number }, required = {}, patterns = {}, additional = 'None }
+                # => error: extra fields
+                
+                # fields that are matched by a pattern don't count as "additional"
+                { bar = 1 } | Record { properties = { foo = Number }, required = {}, patterns = { "." = Number }, additional = 'None }
+                # => { bar = 1 }
+                
+                # additional being 'Some applies the extra contract to unmatched fields
+                { bar = 1 } | Record { properties = { foo = Number }, required = {}, patterns = {}, additional = 'Some String }
+                # => error
+                
+                # Inner contracts are propagated
+                { foo = { bar = 1 }} | Record { properties = { foo = { bar | String } }, required = {}, patterns = {}, additional = 'None }
+                # => error: contract broken by the value of `bar`
+                
+                # Inner contracts aren't evaluated eagerly
+                ({ foo = { bar = 1 }, baz = 2} | Record { properties = { foo = { bar | String } }, required = {}, patterns = {}, additional = 'Some Dyn }).baz
+                # => 2
+                ```
+              "%
+              = fun
+                  { properties, required, patterns, additional, }
+                  =>
+                  std.contract.custom
+                    (fun
+                      label
+                      x
+                      =>
+                      if !(std.is_record x) then
+                        'Error { message = "expected a record" }
+                      else
+                        let x | { _ | Dyn } = x in
+                        let required | { _ | Dyn } = required in
+                          let checked_properties
+                              : [| 'Ok ({ _ | Dyn }), 'Error ErrData |]
+                              = std.array.try_fold_left
                                 (fun
-                                  { field = pattern, value = pred, }
                                   acc
+                                  { field, value = contract, }
                                   =>
-                                  (match {
-                                    r @ { result = 'Error _, .. } =>
-                                      r,
-                                    { result = 'Ok, checked = ch, } =>
-                                      {
-                                        checked =
-                                          std.array.fold_left
-                                              (fun
-                                                r
-                                                field
-                                                =>
-                                                if !(std.record.has_field field
-                                                  r) then
-                                                  std.record.insert field true r
-                                                else
-                                                  r) acc.checked
-                                              (std.record.fields ch),
-                                        result = acc.result,
-                                      },
-                                  })
-                                    (std.array.fold_right
-                                      (fun
-                                        { field, value, }
-                                        acc
-                                        =>
-                                        (match {
-                                          'Ok =>
-                                            {
-                                              checked =
-                                                std.record.insert field true
-                                                    acc.checked,
-                                              result = acc.result,
-                                            },
-                                          error @ 'Error
-                                          _ =>
-                                            {
-                                              checked : { _ : Bool } = {},
-                                              result =
-                                                error_lib.at_field field error,
-                                            },
-                                        }) (pred value))
-                                      {
-                                        checked : { _ : Bool } = {},
-                                        result = 'Ok,
-                                      }
-                                      (std.record.to_array
-                                        (matching_fields pattern))))
-                                { checked : { _ : Bool } = {}, result = 'Ok, }
-                                (std.record.to_array patternProperties)
-                              in
-                            let remaining_fields
-                                = std.array.fold_left
-                                  (fun
-                                    acc
-                                    field
-                                    =>
-                                    if !(std.record.has_field field acc) then
-                                      acc
+                                  if !(std.record.has_field field x) then
+                                    if std.record.has_field field required then
+                                      'Error
+                                        ({
+                                          message =
+                                            "missing required field `%{field}`"
+                                        }
+                                        | ErrData)
                                     else
-                                      std.record.remove field acc) x
-                                  ((std.record.fields check_properties.checked)
-                                  @ (std.record.fields
-                                    check_pattern_properties.checked))
-                                in
-                              let check_additional_properties
-                                  : [|
-                                    'Ok,
-                                    'Error {
-                                      message : String,
-                                      source : Array
-                                        [| '"Array" Number, 'Field String |]
-                                    }
-                                  |]
-                                  = if (!additionalAllowed)
-                                  && (!(std.record.is_empty
-                                    remaining_fields)) then
-                                    error_lib.mk_error
-                                      "extra fields %{std.serialize 'Json
-                                        ((std.record.fields remaining_fields)
-                                        | Dyn)}"
+                                      'Ok acc
                                   else
-                                    std.array.fold_right
+                                    (match {
+                                      'Ok
+                                      checked_value =>
+                                        'Ok
+                                          (std.record.insert
+                                            field
+                                            checked_value
+                                            acc),
+                                      'Error
+                                      e =>
+                                        'Error e,
+                                    })
+                                      (std.contract.check
+                                        contract
+                                        label
+                                        x."%{field}"))
+                                ({}
+                                | { _ | Dyn })
+                                (std.record.to_array (properties | { _ : Dyn }))
+                              in
+                            let matching_fields
+                                : String -> { _ : Dyn }
+                                = fun
+                                  pattern
+                                  =>
+                                  let matcher = std.string.is_match pattern in
+                                  std.array.fold_left
                                       (fun
-                                        { field, value, }
                                         acc
+                                        { field, value, }
                                         =>
-                                        (match {
-                                          'Ok =>
-                                            acc,
-                                          error @ 'Error
-                                          _ =>
-                                            error,
-                                        })
-                                          (error_lib.at_field field
-                                            (additionalProperties value))) 'Ok
-                                      (std.record.to_array remaining_fields)
+                                        if matcher field then
+                                          std.record.insert field value acc
+                                        else
+                                          acc)
+                                      {}
+                                      (std.record.to_array x)
+                                in
+                              let checked_pattern_properties
+                                  : [| 'Ok ({ _ | Dyn }), 'Error ErrData |]
+                                  = std.array.try_fold_left
+                                    (fun
+                                      acc
+                                      { field = pattern, value = contract, }
+                                      =>
+                                      (match {
+                                        'Ok
+                                        checked_dict =>
+                                          'Ok
+                                            ((acc & checked_dict)
+                                            | { _ | Dyn }),
+                                        'Error
+                                        e =>
+                                          'Error e,
+                                      })
+                                        (std.array.try_fold_left
+                                          (fun
+                                            acc
+                                            { field, value, }
+                                            =>
+                                            (match {
+                                              'Ok
+                                              checked_value =>
+                                                'Ok
+                                                  (std.record.insert
+                                                    field
+                                                    checked_value
+                                                    acc),
+                                              'Error
+                                              e =>
+                                                'Error e,
+                                            })
+                                              (std.contract.check
+                                                contract
+                                                label
+                                                value))
+                                          ({}
+                                          | { _ | Dyn })
+                                          (std.record.to_array
+                                            (matching_fields pattern))))
+                                    ({}
+                                    | { _ | Dyn })
+                                    (std.record.to_array
+                                      (patterns
+                                      | { _ : Dyn }))
                                   in
                                 (match {
-                                    'Ok =>
-                                      (match {
-                                        'Ok =>
-                                          check_additional_properties,
-                                        error @ 'Error
-                                        _ =>
-                                          error,
-                                      }) check_pattern_properties.result,
-                                    error @ 'Error
-                                    _ =>
-                                      error,
-                                  }) check_properties.result,
-              required
-                : Array String
-                -> Dyn
-                -> [|
-                  'Ok,
-                  'Error {
-                    message : String,
-                    source : Array [| '"Array" Number, 'Field String |]
-                  }
-                |]
-                | doc "Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.5.3]"
-                = fun
-                    fields
-                    x
-                    =>
-                    if !(std.is_record x) then
-                      'Ok
-                    else
-                      std.array.fold_right
-                        (fun
-                          field
-                          acc
-                          =>
-                          if !(std.record.has_field field
-                            (x
-                            | { _ : Dyn })) then
-                            error_lib.mk_error "missing required field %{field}"
-                          else
-                            acc) 'Ok fields,
-            },
-      strings =
-        {
-            maxLength
-              : Number
-              -> Dyn
-              -> [|
-                'Ok,
-                'Error {
-                  message : String,
-                  source : Array [| '"Array" Number, 'Field String |]
-                }
-              |]
-              | doc "Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.3.1]"
+                                    ['Error e, _] =>
+                                      'Error e,
+                                    [_, 'Error e] =>
+                                      'Error e,
+                                    ['Ok
+                                      checked_properties,
+                                      'Ok
+                                      checked_pattern_properties] =>
+                                      let remaining_fields
+                                        : { _ | Dyn }
+                                        = std.array.fold_left
+                                          (fun
+                                            acc
+                                            field
+                                            =>
+                                            if !(std.record.has_field
+                                              field
+                                              acc) then
+                                              acc
+                                            else
+                                              std.record.remove field acc)
+                                          x
+                                          ((std.record.fields
+                                            (checked_properties
+                                            | { _ : Dyn }))
+                                          @ (std.record.fields
+                                            (checked_pattern_properties
+                                            | { _ : Dyn })))
+                                        in
+                                      let checked_additional
+                                          : [|
+                                            'Ok (
+                                            { _ | Dyn }
+                                            ),
+                                            'Error ErrData
+                                          |]
+                                          = (match {
+                                            'None =>
+                                              if !(std.record.is_empty
+                                                remaining_fields) then
+                                                'Error
+                                                  ({
+                                                    message =
+                                                      "extra fields %{std.serialize
+                                                          'Json
+                                                          ((std.record.fields
+                                                            remaining_fields)
+                                                          | Dyn)}"
+                                                  }
+                                                  | ErrData)
+                                              else
+                                                'Ok ({} | { _ | Dyn }),
+                                            'Some
+                                            contract =>
+                                              std.array.try_fold_left
+                                                (fun
+                                                  acc
+                                                  { field, value, }
+                                                  =>
+                                                  (match {
+                                                    'Ok
+                                                    checked_value =>
+                                                      'Ok
+                                                        (std.record.insert
+                                                          field
+                                                          checked_value
+                                                          acc),
+                                                    'Error
+                                                    e =>
+                                                      'Error e,
+                                                  })
+                                                    (std.contract.check
+                                                      contract
+                                                      label
+                                                      value))
+                                                ({}
+                                                | { _ | Dyn })
+                                                (std.record.to_array
+                                                  remaining_fields),
+                                          })
+                                            (additional
+                                            | [| 'None, 'Some Dyn |])
+                                          in
+                                        (match {
+                                            'Error
+                                            e =>
+                                              'Error e,
+                                            'Ok
+                                            checked_additional =>
+                                              'Ok
+                                                ((checked_properties
+                                                & checked_pattern_properties)
+                                                & checked_additional),
+                                          })
+                                            checked_additional,
+                                  })
+                                    [
+                                      checked_properties,
+                                      checked_pattern_properties
+                                    ]),
+            Required
+              | Array String -> Dyn
+              | doc m%"
+                A contract asserting that a record has certain fields.
+                
+                # Examples
+                
+                
+                ```nickel multiline
+                { foo = 1, bar = 2 } | Required [ "foo" ]
+                # => { foo = 1, bar = 2 }
+                
+                { foo = 1, bar = 2 } | Required [ "baz" ]
+                # => error: missing required field baz
+                
+                "baz" | Required [ "baz" ]
+                # => error: expected a record
+                ```
+              "%
               = fun
-                  limit
-                  x
+                  fields
                   =>
-                  if !(std.is_string x) then
-                    'Ok
-                  else
-                    if (std.string.length (x | String)) <= limit then
-                      'Ok
-                    else
-                      'Error
-                        {
-                          message =
-                            "expected a string of length no larger than %{std.string.from_number
-                                limit}",
-                          source = [  ],
-                        },
-            minLength
-              : Number
-              -> Dyn
-              -> [|
-                'Ok,
-                'Error {
-                  message : String,
-                  source : Array [| '"Array" Number, 'Field String |]
-                }
-              |]
-              | doc "Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.3.2]"
-              = fun
-                  limit
-                  x
-                  =>
-                  if !(std.is_string x) then
-                    'Ok
-                  else
-                    if (std.string.length (x | String)) >= limit then
-                      'Ok
-                    else
-                      'Error
-                        {
-                          message =
-                            "expected a string of length no smaller than %{std.string.from_number
-                                limit}",
-                          source = [  ],
-                        },
-            pattern
-              : String
-              -> Dyn
-              -> [|
-                'Ok,
-                'Error {
-                  message : String,
-                  source : Array [| '"Array" Number, 'Field String |]
-                }
-              |]
-              | doc "Cf. [https://datatracker.ietf.org/doc/html/draft-handrews-json-schema-validation-01#section-6.3.3]"
-              = fun
-                  pattern
-                  x
-                  =>
-                  if !(std.is_string x) then
-                    'Ok
-                  else
-                    if std.string.is_match pattern (x | String) then
-                      'Ok
-                    else
-                      'Error
-                        {
-                          message =
-                            "expected a string matching the pattern `%{pattern}`",
-                          source = [  ],
-                        },
+                  std.contract.from_validator
+                    (fun
+                      value
+                      =>
+                      if !(std.is_record value) then
+                        'Error { message = "expected a record" }
+                      else
+                        (match { 'Error e => 'Error e, 'Ok _ => 'Ok, })
+                          (std.array.try_fold_left
+                            (fun
+                              acc
+                              field
+                              =>
+                              if !(std.record.has_field field value) then
+                                'Error
+                                  {
+                                    message = "missing required field %{field}"
+                                  }
+                              else
+                                'Ok acc)
+                            null
+                            fields))
           },
-    }
+    string =
+      {
+          MaxLength
+            | Number -> Dyn
+            | doc m%"
+              `MaxLength n` is a contract that checks for a string of length at most `n`.
+              
+              Here, the "length" of a string is the number of extended grapheme clusters in the string.
+              This may not agree with the JSON schema semantics, which counts the number of Unicode
+              code points.
+              
+              # Examples
+              
+              ```nickel multiline
+              "Hello" | MaxLength 5
+              
+              # 15 bytes, 3 code points, 1 extended grapheme cluster
+              "👨‍🦰" | MaxLength 1
+              
+              "Hello" | MaxLength 4
+              # => error
+              ```
+            "%
+            = fun
+                limit
+                =>
+                std.contract.from_validator
+                  (fun
+                    value
+                    =>
+                    if !(std.is_string value) then
+                      'Error { message = "expected a string" }
+                    else
+                      if (std.string.length value) <= limit then
+                        'Ok
+                      else
+                        'Error
+                          {
+                            message =
+                              "expected a string of length at most %{std.string.from_number
+                                  limit}"
+                          }),
+          MinLength
+            | Number -> Dyn
+            | doc m%"
+              `MinLength n` is a contract that checks for a string of length at least `n`.
+              
+              Here, the "length" of a string is the number of extended grapheme clusters in the string.
+              This may not agree with the JSON schema semantics, which counts the number of Unicode
+              code points.
+              
+              # Examples
+              
+              ```nickel multiline
+              "Hello" | MinLength 5
+              
+              # 15 bytes, 3 code points, 1 extended grapheme cluster
+              "👨‍🦰" | MinLength 3
+              # => error
+              
+              "Hello" | MinLength 6
+              # => error
+              ```
+            "%
+            = fun
+                limit
+                =>
+                std.contract.from_validator
+                  (fun
+                    value
+                    =>
+                    if !(std.is_string value) then
+                      'Error { message = "expected a string" }
+                    else
+                      if (std.string.length value) >= limit then
+                        'Ok
+                      else
+                        'Error
+                          {
+                            message =
+                              "expected a string of length at least %{std.string.from_number
+                                  limit}"
+                          })
+        }
+  }
   in
-let rec _js2n__-refsenv
-    = {}
-    in
+let rec refs = {} in
   {
       claims
-        | _js2n__-prdslib.contract_from_predicate
-          (_js2n__-prdslib.allOf
-            [
-              _js2n__-prdslib.anyOf
-                [
-                  _js2n__-prdslib.isType '"Array",
-                  _js2n__-prdslib.isType 'Null
-                ],
-              _js2n__-prdslib.arrays.arrayOf
-                (_js2n__-prdslib.allOf
-                  [
-                    _js2n__-prdslib.anyOf
-                      [
-                        _js2n__-prdslib.isType 'Record,
-                        _js2n__-prdslib.isType 'Null
-                      ],
-                    _js2n__-prdslib.records.required [ "name" ],
-                    _js2n__-prdslib.records.record
-                      {
-                        name = _js2n__-prdslib.isType '"String",
-                        request =
-                          _js2n__-prdslib.anyOf
-                              [
-                                _js2n__-prdslib.isType '"String",
-                                _js2n__-prdslib.isType 'Null
-                              ],
-                      } {} false _js2n__-prdslib.never
-                  ])
-            ])
-        | doc m%"
-          Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container.
-          
-          This is an alpha field and requires enabling the DynamicResourceAllocation feature gate.
-          
-          This field is immutable. It can only be set for containers.
-        "%
+        | js2n.Nullable
+          (Array (
+            js2n.Nullable
+              { name | String, request | js2n.Nullable String | optional }
+          ))
         | optional,
       limits
-        | _js2n__-prdslib.contract_from_predicate
-          (_js2n__-prdslib.allOf
-            [
-              _js2n__-prdslib.anyOf
-                [
-                  _js2n__-prdslib.isType 'Record,
-                  _js2n__-prdslib.isType 'Null
-                ],
-              _js2n__-prdslib.records.record {} {} true
-                (_js2n__-prdslib.oneOf
-                  [
-                    _js2n__-prdslib.anyOf
-                      [
-                        _js2n__-prdslib.isType '"String",
-                        _js2n__-prdslib.isType 'Null
-                      ],
-                    _js2n__-prdslib.anyOf
-                      [
-                        _js2n__-prdslib.isType '"Number",
-                        _js2n__-prdslib.isType 'Null
-                      ]
-                  ])
-            ])
-        | doc "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/"
+        | js2n.Nullable
+          ({ _ | js2n.OneOf [ js2n.Nullable String, js2n.Nullable Number ] })
         | optional,
       requests
-        | _js2n__-prdslib.contract_from_predicate
-          (_js2n__-prdslib.allOf
-            [
-              _js2n__-prdslib.anyOf
-                [
-                  _js2n__-prdslib.isType 'Record,
-                  _js2n__-prdslib.isType 'Null
-                ],
-              _js2n__-prdslib.records.record {} {} true
-                (_js2n__-prdslib.oneOf
-                  [
-                    _js2n__-prdslib.anyOf
-                      [
-                        _js2n__-prdslib.isType '"String",
-                        _js2n__-prdslib.isType 'Null
-                      ],
-                    _js2n__-prdslib.anyOf
-                      [
-                        _js2n__-prdslib.isType '"Number",
-                        _js2n__-prdslib.isType 'Null
-                      ]
-                  ])
-            ])
-        | doc "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. Requests cannot exceed Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/"
-        | optional,
+        | js2n.Nullable
+          ({ _ | js2n.OneOf [ js2n.Nullable String, js2n.Nullable Number ] })
+        | optional
     }
