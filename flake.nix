@@ -11,8 +11,10 @@
   outputs = { self, nixpkgs, flake-utils, ... }@inputs:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        json-schema-to-nickel =
+        js2nBin =
           inputs.json-schema-to-nickel.packages.${system}.default;
+
+        js2nSrc = inputs.json-schema-to-nickel;
 
         pkgs = import nixpkgs { inherit system; };
 
@@ -35,38 +37,17 @@
         };
 
         # Generate Nickel contracts from K8s JSON schemas using
-        # `json-schema-to-nickel`.
+        # `json-schema-to-nickel` for a given version.
         #
         # Pass `keepJsonArtifacts = true` to keep the JSON artifacts (original
         # and processed JSON schemas) for debugging purposes.
-        k8sContracts = { version ? latestK8sVersion, keepJsonArtifacts ? false }: pkgs.stdenv.mkDerivation {
-          name = "k8s-contracts-${version}";
-          src = k8sSchemas { inherit version; };
-          phases = [ "buildPhase" "installPhase" ];
-          nativeBuildInputs = [
-            pkgs.coreutils-full
-            json-schema-to-nickel
-            json-schema-bundler
-          ];
-
-          buildPhase = ''
-            mkdir -p contracts
-
-            for filename in "${k8sSchemas {inherit version;}}"/*.json; do
-              basename="$(basename "$filename" .json)"
-              bundled="$basename-bundled.json"
-
-              json-schema-bundler "$filename" > "$bundled"
-              json-schema-to-nickel "$bundled" > ./contracts/"$basename".ncl
-            done
-          '';
-
-          installPhase = ''
-            mkdir -p $out
-            mv ./contracts $out
-
-          '' + nixpkgs.lib.optionalString keepJsonArtifacts "mv ./*.json $out/";
-        };
+        k8sContracts =
+          { version ? latestK8sVersion
+          , keepJsonArtifacts ? false
+          }: k8sContractsBundle {
+            versions = [ version ];
+            inherit keepJsonArtifacts;
+          };
 
         json-schema-bundler = (pkgs.callPackage ./json-schema-bundler { }).package;
 
@@ -90,37 +71,40 @@
         #     "v1.31.6"
         #   ];
         # };
+        # ```
         k8sContractsBundle = { versions, keepJsonArtifacts ? false }: pkgs.stdenv.mkDerivation {
           name = "k8s-contracts-bundle";
           srcs = builtins.map (v: k8sSchemas { version = v; }) versions;
           phases = [ "buildPhase" "installPhase" ];
           nativeBuildInputs = [
             pkgs.coreutils-full
-            json-schema-to-nickel
+            js2nBin
             json-schema-bundler
           ];
 
           buildPhase = ''
-            mkdir -p contracts
+            mkdir contracts
+            mkdir bundles
           '' + builtins.concatStringsSep "\n" (builtins.map
             (version: ''
-              mkdir -p "${version}"
-              mkdir -p "contracts/${version}"
+              mkdir "bundles/${version}"
+              mkdir "contracts/${version}"
+              cp -r "${js2nSrc}/lib" contracts/${version}/.js2n-lib
 
               for filename in "${k8sSchemas {inherit version;}}"/*.json; do
                 basename="$(basename "$filename" .json)"
-                bundled="${version}/$basename-bundled.json"
+                bundled="bundles/${version}/$basename-bundled.json"
 
                 json-schema-bundler "$filename" > "$bundled"
-                json-schema-to-nickel "$bundled" > ./contracts/${version}/"$basename".ncl
+                json-schema-to-nickel --library-path .js2n-lib/main.ncl "$bundled" > "./contracts/${version}/$basename.ncl"
               done
             '')
             versions);
 
           installPhase = ''
             mkdir -p $out
-            mv ./contracts $out
-          '' + nixpkgs.lib.optionalString keepJsonArtifacts "mv ./*.json $out/";
+            cp -r ./contracts $out/
+          '' + nixpkgs.lib.optionalString keepJsonArtifacts "cp -r ./bundles $out/";
         };
 
       in
